@@ -1,29 +1,44 @@
 from datasets import load_dataset
+import torch
+torch.cuda.empty_cache()
 
 # This loads the "small" dataset (CodeXGLUE - code refinement)
-dataset = load_dataset("code_x_glue_cc_code_refinement", "small")
-train_data = dataset["train"]
-valid_data = dataset["validation"]
-test_data = dataset["test"]
-
+train_data = load_dataset("code_x_glue_cc_code_refinement", "small", split="train[:1%]")
+valid_data = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[:1%]")
+test_data  = load_dataset("code_x_glue_cc_code_refinement", "small", split="test[:1%]")
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 model_checkpoint = "codellama/CodeLlama-7b-hf"  # Or smaller model
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 model = AutoModelForCausalLM.from_pretrained(model_checkpoint)
+model.gradient_checkpointing_enable()
+#  Fix: set padding token
+tokenizer.pad_token = tokenizer.eos_token
+model.config.pad_token_id = tokenizer.pad_token_id
 
-def preprocess(example, max_input_length=512, max_target_length=256):
-    # Add prompt-style prefix for clarity
-    input_text = f"<s>Fix the following buggy code:\n{example['buggy']}\n</s>"
-    target_text = example["fixed"] + tokenizer.eos_token
-    
-    input_ids = tokenizer.encode(input_text, max_length=max_input_length, truncation=True)
-    target_ids = tokenizer.encode(target_text, max_length=max_target_length, truncation=True)
-    
-    return {
-        "input_ids": input_ids,
-        "labels": target_ids
-    }
+def preprocess(example, max_length=64):
+    prompt = f"Fix the following buggy code:\n{example['buggy']}\n"
+
+    full_input = prompt + example["fixed"]  # Input + target together
+    tokenized = tokenizer(
+        full_input,
+        max_length=max_length,
+        truncation=True,
+        padding="max_length"
+    )
+
+    labels = tokenizer(
+        example["fixed"],
+        max_length=max_length,
+        truncation=True,
+        padding="max_length"
+    )["input_ids"]
+
+    # Replace padding token ids with -100 to ignore them in loss
+    labels = [label if label != tokenizer.pad_token_id else -100 for label in labels]
+
+    tokenized["labels"] = labels
+    return tokenized
 
 tokenized_train = train_data.map(preprocess)
 tokenized_valid = valid_data.map(preprocess)
@@ -56,7 +71,7 @@ training_args = TrainingArguments(
     weight_decay=0.01,
     save_total_limit=2,
     logging_dir="./logs",
-    fp16=True,  # if using GPU with fp16
+    bf16=True,
     report_to="none"
 )
 
