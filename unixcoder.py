@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModel, AdamW
+from transformers import AutoTokenizer, AutoModel, AdamW, RobertaConfig
 from datasets import load_dataset
 import sacrebleu
 from tqdm import tqdm
@@ -21,7 +21,7 @@ EPOCHS = 5
 LEARNING_RATE = 5e-5
 HIDDEN_SIZE = encoder.config.hidden_size
 VOCAB_SIZE = tokenizer.vocab_size
-NUM_LAYERS = 4
+NUM_LAYERS = 6
 NUM_HEADS = 8
 BEAM_SIZE = 10  # Number of beams for beam search
 
@@ -65,7 +65,8 @@ class Seq2Seq(nn.Module):
 
     def forward(self, src_input_ids, tgt_input_ids, attention_mask):
         encoder_outputs = self.encoder(input_ids=src_input_ids, attention_mask=attention_mask).last_hidden_state
-        logits = self.decoder(tgt_input_ids, memory=encoder_outputs)
+        tgt_mask = nn.Transformer.generate_square_subsequent_mask(tgt_input_ids.size(1)).to(device)
+        logits = self.decoder(tgt_input_ids, memory=encoder_outputs, tgt_mask=tgt_mask)
         return logits
 
 # Tokenize function
@@ -102,13 +103,14 @@ def compute_bleu(preds, targets):
     return sacrebleu.corpus_bleu(preds, [targets]).score
 
 # Load dataset
-train_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="train[:1%]")
-val_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="validation[:1%]")
+train_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="train[:20%]")
+val_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="validation[:5%]")
 tokenized_train = train_dataset.map(tokenize, remove_columns=train_dataset.column_names)
 tokenized_val = val_dataset.map(tokenize, remove_columns=val_dataset.column_names)
 train_loader = DataLoader(tokenized_train, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
-valid_loader = DataLoader(tokenized_val, batch_size=BATCH_SIZE, collate_fn=collate_fn)
+valid_loader = DataLoader(tokenized_val, batch_size=1, collate_fn=collate_fn)
 
+RobertaConfig.from_pretrained("microsoft/UniXcoder-base")
 # Model setup
 decoder = TransformerDecoder(HIDDEN_SIZE, VOCAB_SIZE, NUM_LAYERS, NUM_HEADS).to(device)
 model = Seq2Seq(encoder, decoder).to(device)
@@ -123,7 +125,7 @@ def compute_bleu(preds, targets):
 
 # Beam Search Implementation
 def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SIZE, max_length=MAX_LENGTH):
-    batch_size = memory.size(0)
+    batch_size = 1#memory.size(0)
     device = memory.device
     
     # Initialize beams: each batch item starts with beam_size copies of the start token
@@ -217,13 +219,13 @@ for epoch in range(EPOCHS):
             attention_mask = batch["attention_mask"].to(device)
 
             memory = encoder(input_ids=src_input_ids, attention_mask=attention_mask).last_hidden_state
-            start_token_id = tokenizer.convert_tokens_to_ids("<s>")
-            end_token_id = tokenizer.convert_tokens_to_ids("</s>")
+
+            start_token_id = tokenizer.cls_token_id
+            end_token_id = tokenizer.sep_token_id
 
             decoder_input = torch.full((src_input_ids.size(0), 1), start_token_id, device=device)
-            decoder_input = beam_search(decoder, memory, start_token_id, end_token_id)
-
-            decoded_preds = tokenizer.batch_decode(decoder_input, skip_special_tokens=True)
+            best_beams = beam_search(decoder, memory, start_token_id, end_token_id)
+            decoded_preds = tokenizer.batch_decode(best_beams, skip_special_tokens=True)
             decoded_refs = tokenizer.batch_decode(batch["labels"], skip_special_tokens=True)
             predictions.extend(decoded_preds)
             references.extend(decoded_refs)
