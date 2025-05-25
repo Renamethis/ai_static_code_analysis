@@ -57,8 +57,8 @@ from tree_sitter import Language, Parser
 
 from datasets import load_dataset
 
-train = load_dataset("google/code_x_glue_cc_code_refinement", 'medium', split='train[:40%]')
-val = load_dataset("google/code_x_glue_cc_code_refinement", 'medium', split='validation[:2%]')
+train = load_dataset("google/code_x_glue_cc_code_refinement", 'medium', split='train')
+val = load_dataset("google/code_x_glue_cc_code_refinement", 'medium', split='validation')
 logger = logging.getLogger(__name__)
 dfg_function={
     'python':DFG_python,
@@ -597,11 +597,12 @@ def main():
                 model.train()
                 predictions=[]
                 accs=[]
-                with open(os.path.join(args.output_dir,"dev.output"),'w') as f, open(os.path.join(args.output_dir,"dev.gold"),'w') as f1:
+                with open(os.path.join(args.output_dir,"dev.output"),'w') as f, open(os.path.join(args.output_dir,"dev.gold"),'w') as f1, open(os.path.join(args.output_dir,"dev.original"),'w')  as f2:
                     for ref,gold in zip(p,eval_examples):
                         predictions.append(ref)
                         f.write(ref+'\n')
                         f1.write(gold["fixed"]+'\n')     
+                        f2.write(gold["buggy"] + '\n')
                         accs.append(ref==gold["fixed"])
 
                 dev_bleu=round(_bleu(os.path.join(args.output_dir, "dev.gold"), os.path.join(args.output_dir, "dev.output")),2)
