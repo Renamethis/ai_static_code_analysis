@@ -158,6 +158,12 @@ config = RobertaConfig.from_pretrained("microsoft/UniXcoder-base")
 decoder = TransformerDecoder(HIDDEN_SIZE, VOCAB_SIZE, NUM_LAYERS, config.num_attention_heads).to(device)
 model = Seq2Seq(encoder, decoder).to(device)
 optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
+train_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="train[:20%]")
+val_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="validation[:5%]")
+tokenized_train = train_dataset.map(tokenize, remove_columns=train_dataset.column_names)
+tokenized_val = val_dataset.map(tokenize, remove_columns=val_dataset.column_names)
+train_loader = DataLoader(tokenized_train, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
+valid_loader = DataLoader(tokenized_val, batch_size=1, collate_fn=collate_fn)
 
 # Learning rate scheduler
 total_steps = len(train_loader) * EPOCHS
