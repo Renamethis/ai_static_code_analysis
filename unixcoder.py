@@ -154,7 +154,8 @@ def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SI
 from transformers import get_linear_schedule_with_warmup
 
 # Model setup (same as before)
-decoder = TransformerDecoder(HIDDEN_SIZE, VOCAB_SIZE, NUM_LAYERS, NUM_HEADS).to(device)
+config = RobertaConfig.from_pretrained("microsoft/UniXcoder-base")
+decoder = TransformerDecoder(HIDDEN_SIZE, VOCAB_SIZE, NUM_LAYERS, config.num_attention_heads).to(device)
 model = Seq2Seq(encoder, decoder).to(device)
 optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
 
