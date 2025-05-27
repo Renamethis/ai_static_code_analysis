@@ -24,28 +24,39 @@ NUM_HEADS = 8
 BEAM_SIZE = 5  # Reduced beam size for faster evaluation, can be tuned
 DROPOUT = 0.1  # Added dropout for regularization
 
-# Tokenize function
-def tokenize(example):
-    source = tokenizer(
-        example["buggy"],
-        max_length=MAX_LENGTH,
-        truncation=True,
-        padding="max_length",
-        return_tensors="pt"
-    )
-    target = tokenizer(
-        example["fixed"],
-        max_length=MAX_LENGTH,
-        truncation=True,
-        padding="max_length",
-        return_tensors="pt"
-    )
+def tokenize(examples):
+    # Simply return the text, tokenization will be done in collatefn
     return {
-        "src_input_ids": source["input_ids"].squeeze(),
-        "attention_mask": source["attention_mask"].squeeze(),
-        "tgt_input_ids": target["input_ids"].squeeze(),
-        "labels": target["input_ids"].squeeze()
+        "buggy": examples"buggy",
+        "fixed": examples"fixed"
     }
+
+def collate_fn(batch):
+    # Tokenize here to avoid double tokenization
+    buggytexts = item["buggy" for item in batch]
+    fixedtexts = [item["fixed"] for item in batch]
+    
+    # Tokenize source
+    sourceencoding = tokenizer(
+        buggytexts,
+        maxlength=256,
+        truncation=True,
+        padding=True,
+        returntensors="pt"
+    )
+    
+    # Tokenize target
+    targetencoding = tokenizer(
+        fixedtexts,
+        maxlength=256,
+        truncation=True,
+        padding=True,
+        returntensors="pt"
+    )
+    
+    # Prepare decoder input and labels
+    decoderinputids = targetencoding["input_ids"]:, :-1
+    labels = targetencoding["input_ids"]:, 1:.clone()
 
 def collate_fn(batch):
     return {
@@ -99,70 +110,96 @@ def compute_bleu(preds, targets):
         targets = [target.strip() for target in targets]
         return sacrebleu.corpus_bleu(preds, [targets]).score
 
-class UniXCoderSeq2Seq(nn.Module):
-    def __init__(self, model_name="microsoft/unixcoder-base"):
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
         super().__init__()
-        self.unixcoder = UniXcoder(model_name)
-        self.unixcoder.to(device)
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe.unsqueeze(0))
+
+    def forward(self, x):
+        return x + self.pe[:, :x.size(1)]
+
+class UniXCoderSeq2Seq(nn.Module):
+    def __init__(self, hidden_size=768, num_decoder_layers=6, num_heads=12):
+        super().__init__()
+        self.encoder = unixcoder_model
+        self.hidden_size = hidden_size
         
-    def forward(self, source_code, target_code=None, generate=False, beam_size=5):
-        if generate:
-            # Generation mode
-            return self.generate(source_code, beam_size)
+        # Build custom decoder
+        self.decoder_embedding = nn.Embedding(tokenizer.vocab_size, hidden_size)
+        
+        # Positional encoding
+        self.positional_encoding = PositionalEncoding(hidden_size)
+        
+        # Transformer decoder layers
+        decoder_layer = nn.TransformerDecoderLayer(
+            d_model=hidden_size,
+            nhead=num_heads,
+            dim_feedforward=hidden_size * 4,
+            dropout=0.1,
+            activation='gelu',
+            batch_first=True
+        )
+        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
+        
+        # Output projection
+        self.output_projection = nn.Linear(hidden_size, tokenizer.vocab_size)
+        
+        # Copy encoder embeddings to decoder
+        self.decoder_embedding.weight = self.encoder.embeddings.word_embeddings.weight
+        
+    def encode(self, input_ids, attention_mask):
+        # Use UniXCoder as encoder
+        encoder_outputs = self.encoder(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        ).last_hidden_state
+        
+        return encoder_outputs
+    
+    def decode(self, tgt_input_ids, encoder_outputs, src_attention_mask, tgt_attention_mask=None):
+        # Embed target tokens
+        tgt_embeddings = self.decoder_embedding(tgt_input_ids)
+        tgt_embeddings = self.positional_encoding(tgt_embeddings)
+        
+        # Create masks
+        tgt_seq_len = tgt_input_ids.size(1)
+        if tgt_attention_mask is None:
+            tgt_mask = nn.Transformer.generate_square_subsequent_mask(
+                tgt_seq_len, 
+                device=tgt_input_ids.device
+            )
         else:
-            # Training mode with teacher forcing
-            return self.train_forward(source_code, target_code)
+            tgt_mask = tgt_attention_mask
+        
+        # Invert attention mask for memory_key_padding_mask
+        memory_key_padding_mask = ~src_attention_mask.bool()
+        
+        # Decode
+        decoder_outputs = self.decoder(
+            tgt_embeddings,
+            encoder_outputs,
+            tgt_mask=tgt_mask,
+            memory_key_padding_mask=memory_key_padding_mask
+        )
+        
+        # Project to vocabulary
+        logits = self.output_projection(decoder_outputs)
+        
+        return logits
     
-    def train_forward(self, source_code, target_code):
-        # Tokenize source in encoder mode
-        source_ids = self.unixcoder.tokenize(
-            source_code, 
-            max_length=256, 
-            mode="<encoder-only>"
-        )
-        source_ids = torch.tensor(source_ids).to(device)
+    def forward(self, input_ids, attention_mask, decoder_input_ids):
+        # Encode
+        encoder_outputs = self.encode(input_ids, attention_mask)
         
-        # Get encoder representations
-        _, encoder_hidden = self.unixcoder(source_ids)
+        # Decode
+        logits = self.decode(decoder_input_ids, encoder_outputs, attention_mask)
         
-        # For training, we need to use decoder mode with encoder hidden states
-        # UniXcoder should support encoder-decoder mode
-        target_ids = self.unixcoder.tokenize(
-            target_code,
-            max_length=256,
-            mode="<decoder-only>"
-        )
-        target_ids = torch.tensor(target_ids).to(device)
-        
-        # Get decoder outputs conditioned on encoder hidden states
-        # This requires using the model in encoder-decoder mode
-        outputs = self.unixcoder.decode(
-            target_ids, 
-            encoder_hidden_states=encoder_hidden,
-            mode="<encoder-decoder>"
-        )
-        
-        return outputs
-    
-    def generate(self, source_code, beam_size=5, max_length=256):
-        # Encode source
-        source_ids = self.unixcoder.tokenize(
-            source_code,
-            max_length=256,
-            mode="<encoder-only>"
-        )
-        source_ids = torch.tensor(source_ids).to(device)
-        _, encoder_hidden = self.unixcoder(source_ids)
-        
-        # Generate using beam search
-        generated_ids = self.unixcoder.generate(
-            encoder_hidden_states=encoder_hidden,
-            beam_size=beam_size,
-            max_length=max_length,
-            mode="<decoder-only>"
-        )
-        
-        return generated_ids
+        return logits
 
 from transformers import get_linear_schedule_with_warmup
 
