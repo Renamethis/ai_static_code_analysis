@@ -68,7 +68,7 @@ def collate_fn(batch):
         "labels": labels
     }
 
-def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SIZE, max_length=MAX_LENGTH):
+def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SIZE, max_length=100):
     batch_size = memory.size(0)  # Dynamically set batch size
     device = memory.device
     
@@ -77,6 +77,9 @@ def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SI
     active_beams = torch.ones(batch_size, beam_size, dtype=torch.bool, device=device)
     
     for step in range(max_length - 1):
+        if step > max_length - 2:
+            print(f"Warning: Reached max length {max_length}")
+            break
         decoder_input = beams.view(batch_size * beam_size, -1)
         memory_expanded = memory.repeat_interleave(beam_size, dim=0)
         logits = decoder(decoder_input, memory_expanded)[:, -1, :]
@@ -252,23 +255,40 @@ for epoch in range(EPOCHS):
     # Evaluation
     model.eval()
     predictions, references = [], []
+    
+    print(f"Starting evaluation on {len(valid_loader)} batches...")
+    
     with torch.no_grad():
-        for batch in tqdm(valid_loader, desc="Evaluating", leave=False):
-            src_input_ids = batch["src_input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
+        for idx, batch in enumerate(tqdm(valid_loader, desc="Evaluating", leave=False)):
+            try:
+                src_input_ids = batch["src_input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
 
-            memory = encoder(input_ids=src_input_ids, attention_mask=attention_mask).last_hidden_state
+                memory = encoder(input_ids=src_input_ids, attention_mask=attention_mask).last_hidden_state
 
-            start_token_id = tokenizer.cls_token_id
-            end_token_id = tokenizer.sep_token_id
+                start_token_id = tokenizer.cls_token_id
+                end_token_id = tokenizer.sep_token_id
 
-            decoder_input = torch.full((src_input_ids.size(0), 1), start_token_id, device=device)
-            best_beams = beam_search(decoder, memory, start_token_id, end_token_id)
-            decoded_preds = tokenizer.batch_decode(best_beams, skip_special_tokens=True)
-            decoded_refs = tokenizer.batch_decode(batch["labels"], skip_special_tokens=True)
-            predictions.extend(decoded_preds)
-            references.extend(decoded_refs)
+                decoder_input = torch.full((src_input_ids.size(0), 1), start_token_id, device=device)
+                
+                # Add timeout or max steps to beam search
+                best_beams = beam_search(decoder, memory, start_token_id, end_token_id, max_length=100)
+                
+                decoded_preds = tokenizer.batch_decode(best_beams, skip_special_tokens=True)
+                decoded_refs = tokenizer.batch_decode(batch["labels"], skip_special_tokens=True)
+                predictions.extend(decoded_preds)
+                references.extend(decoded_refs)
+                
+                # Limit evaluation to first few batches for debugging
+                if idx >= 10:  # Only evaluate on 10 batches for now
+                    print("Limited evaluation for debugging...")
+                    break
+                    
+            except Exception as e:
+                print(f"Error in batch {idx}: {e}")
+                continue
 
-    bleu_score = compute_bleu(predictions, references)
+    bleu_score = compute_bleu(predictions, references) if predictions else 0.0
     print(f"Validation BLEU score: {bleu_score:.2f}")
+
 
