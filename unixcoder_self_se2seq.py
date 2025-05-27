@@ -15,29 +15,29 @@ encoder = AutoModel.from_pretrained("microsoft/UniXcoder-base").to(device)
 # Hyperparameters
 MAX_LENGTH = 256
 BATCH_SIZE = 8  # Increased batch size for better gradient stability
-EPOCHS = 5
+EPOCHS = 1
 LEARNING_RATE = 2e-5  # Slightly lower learning rate for stability
 HIDDEN_SIZE = encoder.config.hidden_size
 VOCAB_SIZE = tokenizer.vocab_size
 NUM_LAYERS = 6
 NUM_HEADS = 8
-BEAM_SIZE = 5  # Reduced beam size for faster evaluation, can be tuned
+BEAM_SIZE = 8  # Reduced beam size for faster evaluation, can be tuned
 DROPOUT = 0.1  # Added dropout for regularization
 
 def tokenize(examples):
     # Simply return the text, tokenization will be done in collatefn
     return {
-        "buggy": examples"buggy",
-        "fixed": examples"fixed"
+        "buggy": examples["buggy"],
+        "fixed": examples["fixed"]
     }
 
 def collate_fn(batch):
     # Tokenize here to avoid double tokenization
-    buggytexts = item["buggy" for item in batch]
+    buggytexts = [item["buggy"] for item in batch]
     fixedtexts = [item["fixed"] for item in batch]
     
     # Tokenize source
-    sourceencoding = tokenizer(
+    source_encoding = tokenizer(
         buggytexts,
         maxlength=256,
         truncation=True,
@@ -46,7 +46,7 @@ def collate_fn(batch):
     )
     
     # Tokenize target
-    targetencoding = tokenizer(
+    target_encoding = tokenizer(
         fixedtexts,
         maxlength=256,
         truncation=True,
@@ -55,14 +55,19 @@ def collate_fn(batch):
     )
     
     # Prepare decoder input and labels
-    decoderinputids = targetencoding["input_ids"]:, :-1
-    labels = targetencoding["input_ids"]:, 1:.clone()
-
-def collate_fn(batch):
+    decoder_input_ids = target_encoding["input_ids"][:, :-1]
+    labels = target_encoding["input_ids"][:, 1:].clone()
+    
+    # Replace padding token id with -100 for loss calculation
+    labels[labels == tokenizer.pad_token_id] = -100
+    
     return {
-        key: torch.stack([torch.tensor(example[key], dtype=torch.long) for example in batch])
-        for key in batch[0]
+        "input_ids": source_encoding["input_ids"],
+        "attention_mask": source_encoding["attention_mask"],
+        "decoder_input_ids": decoder_input_ids,
+        "labels": labels
     }
+
 def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SIZE, max_length=MAX_LENGTH):
     batch_size = memory.size(0)  # Dynamically set batch size
     device = memory.device
@@ -209,12 +214,12 @@ model = UniXCoderSeq2Seq(encoder, decoder).to(device)
 optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
 criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
-train_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="train")
-val_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="validation")
+train_dataset = load_dataset("code_x_glue_cc_code_refinement", "small", split="train")
+val_dataset = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[:10]")
 tokenized_train = train_dataset.map(tokenize, remove_columns=train_dataset.column_names)
 tokenized_val = val_dataset.map(tokenize, remove_columns=val_dataset.column_names)
 train_loader = DataLoader(tokenized_train, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
-valid_loader = DataLoader(tokenized_val, batch_size=1, collate_fn=collate_fn)
+valid_loader = DataLoader(tokenized_val, batch_size=32, collate_fn=collate_fn)
 
 # Learning rate scheduler
 total_steps = len(train_loader) * EPOCHS
