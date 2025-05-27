@@ -248,7 +248,7 @@ for epoch in range(EPOCHS):
     model.eval()
     predictions, references = [], []
     with torch.no_grad():
-        for batch in valid_loader:
+        for batch in tqdm(valid_loader, desc="Evaluating", leave=False):
             src_input_ids = batch["src_input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
 
