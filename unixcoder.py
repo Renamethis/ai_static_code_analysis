@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModel, AdamW
+from transformers import AutoTokenizer, AutoModel, AdamW, RobertaConfig
 from datasets import load_dataset
 import sacrebleu
 from tqdm import tqdm
@@ -24,7 +24,7 @@ class PositionalEncoding(nn.Module):
         pe[:, 1::2] = torch.cos(position * div)
 # Hyperparameters
 MAX_LENGTH = 256
-BATCH_SIZE = 16  # Increased batch size for better gradient stability
+BATCH_SIZE = 8  # Increased batch size for better gradient stability
 EPOCHS = 5
 LEARNING_RATE = 2e-5  # Slightly lower learning rate for stability
 HIDDEN_SIZE = encoder.config.hidden_size
@@ -150,6 +150,10 @@ def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SI
     best_beams = beams[batch_indices, best_beam_idx, :]
     
     return best_beams
+def compute_bleu(preds, targets):
+        preds = [pred.strip() for pred in preds]
+        targets = [target.strip() for target in targets]
+        return sacrebleu.corpus_bleu(preds, [targets]).score
 
 from transformers import get_linear_schedule_with_warmup
 
@@ -158,8 +162,10 @@ config = RobertaConfig.from_pretrained("microsoft/UniXcoder-base")
 decoder = TransformerDecoder(HIDDEN_SIZE, VOCAB_SIZE, NUM_LAYERS, config.num_attention_heads).to(device)
 model = Seq2Seq(encoder, decoder).to(device)
 optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
-train_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="train[:20%]")
-val_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="validation[:5%]")
+criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
+
+train_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="train")
+val_dataset = load_dataset("code_x_glue_cc_code_refinement", "medium", split="validation")
 tokenized_train = train_dataset.map(tokenize, remove_columns=train_dataset.column_names)
 tokenized_val = val_dataset.map(tokenize, remove_columns=val_dataset.column_names)
 train_loader = DataLoader(tokenized_train, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
