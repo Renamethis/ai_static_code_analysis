@@ -202,7 +202,7 @@ config = {
     'gradient_accumulation_steps': 4,
     'learning_rate': 5e-5,
     'warmup_steps': 1000,
-    'num_epochs': 10,
+    'num_epochs': 1,
     'max_grad_norm': 1.0,
     'fp16': True,
     'eval_steps': 500,
@@ -299,3 +299,93 @@ for epoch in range(config['num_epochs']):
             })
             
             # Evaluation
+            if global_step % config['eval_steps'] == 0:
+                print(f"\nEvaluating at step {global_step}...")
+                model.eval()
+                eval_loss = 0
+                predictions = []
+                references = []
+                
+                with torch.no_grad():
+                    for eval_batch in tqdm(val_loader, desc="Evaluating"):
+                        eval_batch = {k: v.to(device) for k, v in eval_batch.items()}
+                        
+                        # Calculate validation loss
+                        outputs = model(
+                            input_ids=eval_batch['input_ids'],
+                            attention_mask=eval_batch['attention_mask'],
+                            labels=eval_batch['labels']
+                        )
+                        eval_loss += outputs.loss.item()
+                        
+                        # Generate predictions
+                        generated_ids = model.generate(
+                            input_ids=eval_batch['input_ids'],
+                            attention_mask=eval_batch['attention_mask'],
+                            max_length=256,
+                            num_beams=5,
+                            early_stopping=True,
+                            no_repeat_ngram_size=3,
+                            length_penalty=1.0
+                        )
+                        
+                        # Decode predictions and references
+                        preds = tokenizer.batch_decode(generatedids, skipspecialtokens=True)
+                        labels = evalbatch'labels'
+                        labelslabels == -100 = tokenizer.padtokenid
+                        refs = tokenizer.batchdecode(labels, skipspecialtokens=True)
+                        
+                        predictions.extend(preds)
+                        references.extend([[ref] for ref in refs])
+                
+                # Calculate metrics
+                avgevalloss = evalloss / len(valloader)
+                bleuscore = bleu.compute(predictions=predictions, references=references)
+                
+                print(f"Step {globalstep}: Eval Loss: {avgevalloss:.4f}, BLEU: {bleuscore'bleu':.4f}")
+                
+                # Save best model
+                if bleuscore['bleu'] > bestbleuscore:
+                    bestbleuscore = bleuscore'bleu'
+                    model.savepretrained(f"bestmodelbleu{bestbleuscore:.2f}")
+                    tokenizer.savepretrained(f"bestmodelbleu{bestbleuscore:.2f}")
+                    print(f"Saved best model with BLEU: {bestbleuscore:.4f}")
+                
+                model.train()
+            
+            # Save checkpoint
+            if globalstep % config['savesteps'] == 0:
+                model.savepretrained(f"checkpoint-{globalstep}")
+                tokenizer.savepretrained(f"checkpoint-{globalstep}")
+    
+    # End of epoch evaluation
+    print(f"\nEnd of Epoch {epoch+1} Evaluation...")
+    model.eval()
+    evalloss = 0
+    predictions = []
+    references = []
+    
+    with torch.nograd():
+        for evalbatch in tqdm(valloader, desc="Final Evaluation"):
+            evalbatch = {k: v.to(device) for k, v in evalbatch.items()}
+            
+            outputs = model(
+                inputids=evalbatch'input_ids',
+                attentionmask=evalbatch'attention_mask',
+                labels=evalbatch['labels']
+            )
+            evalloss += outputs.loss.item()
+            
+            generatedids = model.generate(
+                inputids=evalbatch['inputids'],
+                attentionmask=evalbatch'attention_mask',
+                maxlength=256,
+                numbeams=5,
+                earlystopping=True,
+                norepeatngramsize=3,
+                lengthpenalty=1.0
+            )
+            
+            preds = tokenizer.batchdecode(generatedids, skipspecialtokens=True)
+            labels = evalbatch'labels'
+            labelslabels == -100 = tokenizer.padtoken
