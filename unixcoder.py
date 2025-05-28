@@ -306,57 +306,70 @@ for epoch in range(config['num_epochs']):
                 predictions = []
                 references = []
                 
-                with torch.no_grad():
-                    for eval_batch in tqdm(val_loader, desc="Evaluating"):
-                        eval_batch = {k: v.to(device) for k, v in eval_batch.items()}
-                        
-                        # Calculate validation loss
-                        outputs = model(
-                            input_ids=eval_batch['input_ids'],
-                            attention_mask=eval_batch['attention_mask'],
-                            labels=eval_batch['labels']
-                        )
-                        eval_loss += outputs.loss.item()
-                        
-                        # Generate predictions
-                        generated_ids = model.generate(
-                            input_ids=eval_batch['input_ids'],
-                            attention_mask=eval_batch['attention_mask'],
-                            max_length=256,
-                            num_beams=5,
-                            early_stopping=True,
-                            no_repeat_ngram_size=3,
-                            length_penalty=1.0
-                        )
-                        
-                        # Decode predictions and references
-                        preds = tokenizer.batch_decode(generatedids, skipspecialtokens=True)
-                        labels = evalbatch'labels'
-                        labelslabels == -100 = tokenizer.padtokenid
-                        refs = tokenizer.batchdecode(labels, skipspecialtokens=True)
-                        
-                        predictions.extend(preds)
-                        references.extend([[ref] for ref in refs])
-                
-                # Calculate metrics
-                avgevalloss = evalloss / len(valloader)
-                bleuscore = bleu.compute(predictions=predictions, references=references)
-                
-                print(f"Step {globalstep}: Eval Loss: {avgevalloss:.4f}, BLEU: {bleuscore'bleu':.4f}")
-                
-                # Save best model
-                if bleuscore['bleu'] > bestbleuscore:
-                    bestbleuscore = bleuscore'bleu'
-                    model.savepretrained(f"bestmodelbleu{bestbleuscore:.2f}")
-                    tokenizer.savepretrained(f"bestmodelbleu{bestbleuscore:.2f}")
-                    print(f"Saved best model with BLEU: {bestbleuscore:.4f}")
-                
-                model.train()
+    with torch.no_grad():
+        for eval_batch in tqdm(val_loader, desc="Evaluating"):
+            eval_batch = {k: v.to(device) for k, v in eval_batch.items()}
             
-            # Save checkpoint
-            if globalstep % config['savesteps'] == 0:
-                model.savepretrained(f"checkpoint-{globalstep}")
-                tokenizer.savepretrained(f"checkpoint-{globalstep}")
+            # Calculate validation loss
+            outputs = model(
+                input_ids=eval_batch['input_ids'],
+                attention_mask=eval_batch['attention_mask'],
+                labels=eval_batch['labels']
+            )
+            eval_loss += outputs.loss.item()
+            
+            # Generate predictions
+            generated_ids = model.generate(
+                input_ids=eval_batch['input_ids'],
+                attention_mask=eval_batch['attention_mask'],
+                max_length=256,
+                num_beams=5,
+                early_stopping=True,
+                no_repeat_ngram_size=3,
+                length_penalty=1.0,
+                temperature=0.8,
+                do_sample=False,
+                repetition_penalty=1.2
+            )
+            
+            # Decode predictions
+            preds = tokenizer.batch_decode(
+                generated_ids, 
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=True
+            )
+            
+            # Process labels for references - FIX HERE
+            labels = eval_batch['labels'].clone()
+            # Replace -100 with pad token id before decoding
+            labels = torch.where(labels != -100, labels, tokenizer.pad_token_id)
+            
+            # Ensure labels are on CPU and converted to list for batch_decode
+            refs = tokenizer.batch_decode(
+                labels.cpu().tolist(), 
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=True
+            )
+            
+            predictions.extend(preds)
+            references.extend([[ref] for ref in refs])
+
+    # Calculate metrics
+    avg_eval_loss = eval_loss / len(val_loader)
+    bleu_score = bleu.compute(
+        predictions=predictions, 
+        references=references,
+        max_order=4,
+        smooth=True
+    )
+
+    # Additional metrics
+    exact_match = sum([pred.strip() == ref[0].strip() for pred, ref in zip(predictions, references)]) / len(predictions)
+
+    print(f"Step {global_step}: Eval Loss: {avg_eval_loss:.4f}, BLEU: {bleu_score['bleu']:.4f}, Exact Match: {exact_match:.4f}")
+    print(f"BLEU-1: {bleu_score['precisions'][0]:.4f}, BLEU-2: {bleu_score['precisions'][1]:.4f}, "
+        f"BLEU-3: {bleu_score['precisions'][2]:.4f}, BLEU-4: {bleu_score['precisions'][3]:.4f}")
+
     
     # End of epoch evaluation
     print(f"\nEnd of Epoch {epoch+1} Evaluation...")
