@@ -1,222 +1,132 @@
 import torch
 import torch.nn as nn
-from unixcoder import UniXcoder
-from torch.utils.data import DataLoader
-from datasets import load_dataset
-import sacrebleu
+from torch.utils.data import Dataset, DataLoader
+import pandas as pd
 from tqdm import tqdm
-# Set device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import numpy as np
+from sklearn.model_selection import train_test_split
+from unixcoder import UniXcoder
 
-# Load tokenizer and encoder
-tokenizer = AutoTokenizer.from_pretrained("microsoft/UniXcoder-base")
-encoder = AutoModel.from_pretrained("microsoft/UniXcoder-base").to(device)
+# Device configuration
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Hyperparameters
-MAX_LENGTH = 256
-BATCH_SIZE = 8  # Increased batch size for better gradient stability
-EPOCHS = 1
-LEARNING_RATE = 2e-5  # Slightly lower learning rate for stability
-HIDDEN_SIZE = encoder.config.hidden_size
-VOCAB_SIZE = tokenizer.vocab_size
-NUM_LAYERS = 6
-NUM_HEADS = 8
-BEAM_SIZE = 8  # Reduced beam size for faster evaluation, can be tuned
-DROPOUT = 0.1  # Added dropout for regularization
-
-def tokenize(examples):
-    # Simply return the text, tokenization will be done in collatefn
-    return {
-        "buggy": examples["buggy"],
-        "fixed": examples["fixed"]
-    }
-
-def collate_fn(batch):
-    # Tokenize here to avoid double tokenization
-    buggytexts = [item["buggy"] for item in batch]
-    fixedtexts = [item["fixed"] for item in batch]
+class CodeRefinementDataset(Dataset):
+    def __init__(self, dataframe, tokenizer, max_length=512):
+        self.data = dataframe
+        self.tokenizer = tokenizer
+        self.max_length = max_length
     
-    # Tokenize source
-    source_encoding = tokenizer(
-        buggytexts,
-        maxlength=256,
-        truncation=True,
-        padding=True,
-        returntensors="pt"
-    )
+    def __len__(self):
+        return len(self.data)
     
-    # Tokenize target
-    target_encoding = tokenizer(
-        fixedtexts,
-        maxlength=256,
-        truncation=True,
-        padding=True,
-        returntensors="pt"
-    )
-    
-    # Prepare decoder input and labels
-    decoder_input_ids = target_encoding["input_ids"][:, :-1]
-    labels = target_encoding["input_ids"][:, 1:].clone()
-    
-    # Replace padding token id with -100 for loss calculation
-    labels[labels == tokenizer.pad_token_id] = -100
-    
-    return {
-        "input_ids": source_encoding["input_ids"],
-        "attention_mask": source_encoding["attention_mask"],
-        "decoder_input_ids": decoder_input_ids,
-        "labels": labels
-    }
-
-def beam_search(decoder, memory, start_token_id, end_token_id, beam_size=BEAM_SIZE, max_length=100):
-    batch_size = memory.size(0)  # Dynamically set batch size
-    device = memory.device
-    
-    beams = torch.full((batch_size, beam_size, 1), start_token_id, dtype=torch.long, device=device)
-    scores = torch.zeros(batch_size, beam_size, device=device)
-    active_beams = torch.ones(batch_size, beam_size, dtype=torch.bool, device=device)
-    
-    for step in range(max_length - 1):
-        if step > max_length - 2:
-            print(f"Warning: Reached max length {max_length}")
-            break
-        decoder_input = beams.view(batch_size * beam_size, -1)
-        memory_expanded = memory.repeat_interleave(beam_size, dim=0)
-        logits = decoder(decoder_input, memory_expanded)[:, -1, :]
-        log_probs = torch.log_softmax(logits, dim=-1)
-        log_probs = log_probs.view(batch_size, beam_size, -1)
-        log_probs = log_probs.masked_fill(~active_beams.unsqueeze(-1), float('-inf'))
+    def __getitem__(self, idx):
+        row = self.data.iloc[idx]
+        buggy_code = str(row['buggy'])
+        fixed_code = str(row['fixed'])
         
-        new_scores = scores.unsqueeze(-1) + log_probs
-        new_scores_2d = new_scores.view(batch_size, beam_size * VOCAB_SIZE)
-        top_scores, top_indices = torch.topk(new_scores_2d, k=beam_size, dim=-1)
+        # Tokenize input (buggy code)
+        tokens_ids = self.tokenizer.tokenize([buggy_code], max_length=self.max_length, mode="<encoder-decoder>")[0]
+        source_ids = torch.tensor(tokens_ids).long()
         
-        new_beam_indices = top_indices // VOCAB_SIZE
-        new_token_indices = top_indices % VOCAB_SIZE
+        # Tokenize target (fixed code)
+        target_tokens = self.tokenizer.tokenize([fixed_code], max_length=self.max_length, mode="<encoder-decoder>")[0]
+        target_ids = torch.tensor(target_tokens).long()
         
-        beams_expanded = beams.unsqueeze(2).repeat(1, 1, VOCAB_SIZE, 1).view(batch_size, beam_size * VOCAB_SIZE, -1)
-        batch_indices = torch.arange(batch_size, device=device).view(-1, 1).repeat(1, beam_size)
-        selected_beams = beams_expanded[batch_indices, top_indices, :]
+        return {
+            'source_ids': source_ids,
+            'target_ids': target_ids
+        }
+class UniXcoderSeq2Seq(nn.Module):
+    def init(self, modelpath='microsoft/unixcoder-base'):
+        super(UniXcoderSeq2Seq, self).init()
         
-        new_tokens = new_token_indices.unsqueeze(-1)
-        beams = torch.cat([selected_beams, new_tokens], dim=-1)
+        # Initialize UniXcoder model
+        self.model = UniXcoder(modelpath)
+        self.config = self.model.config
         
-        scores = top_scores
+        # Create decoder layer with cross-attention
+        self.lmhead = nn.Linear(self.config.hiddensize, self.config.vocabsize, bias=False)
+        self.lmhead.weight = self.model.embeddings.wordembeddings.weight
         
-        active_beams = active_beams & (new_token_indices != end_token_id)
+    def forward(self, sourceids, targetids=None):
+        # Get attention masks
+        sourcemask = sourceids.ne(self.config.padtokenid)
         
-        if active_beams.sum(dim=-1).eq(0).all():
-            break
-    
-    best_beam_idx = scores.argmax(dim=-1)
-    batch_indices = torch.arange(batch_size, device=device)
-    best_beams = beams[batch_indices, best_beam_idx, :]
-    
-    return best_beams
-def compute_bleu(preds, targets):
-        preds = [pred.strip() for pred in preds]
-        targets = [target.strip() for target in targets]
-        return sacrebleu.corpus_bleu(preds, [targets]).score
-
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=5000):
-        super().__init__()
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        self.register_buffer('pe', pe.unsqueeze(0))
-
-    def forward(self, x):
-        return x + self.pe[:, :x.size(1)]
-
-class UniXCoderSeq2Seq(nn.Module):
-    def __init__(self, hidden_size=768, num_decoder_layers=6, num_heads=12):
-        super().__init__()
-        self.encoder = unixcoder_model
-        self.hidden_size = hidden_size
-        
-        # Build custom decoder
-        self.decoder_embedding = nn.Embedding(tokenizer.vocab_size, hidden_size)
-        
-        # Positional encoding
-        self.positional_encoding = PositionalEncoding(hidden_size)
-        
-        # Transformer decoder layers
-        decoder_layer = nn.TransformerDecoderLayer(
-            d_model=hidden_size,
-            nhead=num_heads,
-            dim_feedforward=hidden_size * 4,
-            dropout=0.1,
-            activation='gelu',
-            batch_first=True
-        )
-        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_decoder_layers)
-        
-        # Output projection
-        self.output_projection = nn.Linear(hidden_size, tokenizer.vocab_size)
-        
-        # Copy encoder embeddings to decoder
-        self.decoder_embedding.weight = self.encoder.embeddings.word_embeddings.weight
-        
-    def encode(self, input_ids, attention_mask):
-        # Use UniXCoder as encoder
-        encoder_outputs = self.encoder(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        ).last_hidden_state
-        
-        return encoder_outputs
-    
-    def decode(self, tgt_input_ids, encoder_outputs, src_attention_mask, tgt_attention_mask=None):
-        # Embed target tokens
-        tgt_embeddings = self.decoder_embedding(tgt_input_ids)
-        tgt_embeddings = self.positional_encoding(tgt_embeddings)
-        
-        # Create masks
-        tgt_seq_len = tgt_input_ids.size(1)
-        if tgt_attention_mask is None:
-            tgt_mask = nn.Transformer.generate_square_subsequent_mask(
-                tgt_seq_len, 
-                device=tgt_input_ids.device
+        if targetids is not None:
+            # Training mode - use teacher forcing
+            targetmask = targetids.ne(self.config.padtokenid)
+            
+            # Encode source
+            outputs = self.model(sourceids, attentionmask=sourcemask)
+            encoderoutput = outputs0  # (batchsize, sourcelength, hiddensize)
+            
+            # Decode with cross-attention
+            # Shift targetids right for input
+            decoderinputids = self.shifttokensright(targetids)
+            decodermask = decoderinputids.ne(self.config.padtokenid)
+            
+            # Get decoder outputs
+            decoderoutputs = self.model(
+                decoderinputids,
+                attentionmask=decodermask,
+                encoderhiddenstates=encoderoutput,
+                encoderattentionmask=sourcemask
             )
+            
+            sequenceoutput = decoderoutputs0
+            predictionscores = self.lmhead(sequenceoutput)
+            
+            # Calculate loss
+            lossfct = nn.CrossEntropyLoss(ignoreindex=self.config.padtokenid)
+            loss = lossfct(predictionscores.view(-1, self.config.vocabsize), 
+                          targetids.view(-1))
+            
+            return loss, predictionscores
         else:
-            tgt_mask = tgt_attention_mask
-        
-        # Invert attention mask for memory_key_padding_mask
-        memory_key_padding_mask = ~src_attention_mask.bool()
-        
-        # Decode
-        decoder_outputs = self.decoder(
-            tgt_embeddings,
-            encoder_outputs,
-            tgt_mask=tgt_mask,
-            memory_key_padding_mask=memory_key_padding_mask
-        )
-        
-        # Project to vocabulary
-        logits = self.output_projection(decoder_outputs)
-        
-        return logits
+            # Inference mode
+            outputs = self.model(sourceids, attentionmask=sourcemask)
+            encoderoutput = outputs0
+            return encoderoutput
     
-    def forward(self, input_ids, attention_mask, decoder_input_ids):
-        # Encode
-        encoder_outputs = self.encode(input_ids, attention_mask)
+    def shifttokensright(self, inputids):
+        """Shift input ids right for decoder input"""
+        shiftedinputids = inputids.newzeros(inputids.shape)
+        shiftedinputids:, 1: = inputids[:, :-1].clone()
+        shiftedinputids[:, 0] = self.config.bostokenid
+        return shiftedinputids
+    
+    def generate(self, sourceids, maxlength=512, numbeams=5):
+        """Generate code using beam search"""
+        sourcemask = sourceids.ne(self.config.padtokenid)
         
-        # Decode
-        logits = self.decode(decoder_input_ids, encoder_outputs, attention_mask)
+        # Encode source
+        outputs = self.model(sourceids, attentionmask=sourcemask)
+        encoderoutput = outputs0
         
-        return logits
-
-from transformers import get_linear_schedule_with_warmup
-
-config = RobertaConfig.from_pretrained("microsoft/UniXcoder-base")
-decoder = TransformerDecoder(HIDDEN_SIZE, VOCAB_SIZE, NUM_LAYERS, config.num_attention_heads).to(device)
-model = UniXCoderSeq2Seq(encoder, decoder).to(device)
-optimizer = AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
-criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
-
+        # Initialize decoder input
+        batchsize = sourceids.size(0)
+        decoderinputids = torch.full((batchsize, 1), self.config.bostokenid, 
+                                     dtype=torch.long, device=sourceids.device)
+        
+        # Simple greedy decoding (you can implement beam search if needed)
+        for  in range(maxlength - 1):
+            decodermask = decoderinputids.ne(self.config.padtokenid)
+            
+            decoderoutputs = self.model(
+                decoderinputids,
+                attentionmask=decodermask,
+                encoderhiddenstates=encoderoutput,
+                encoderattentionmask=sourcemask
+            )
+            predictions = self.lm_head(decoder_outputs[0])
+            next_token = predictions[:, -1, :].argmax(dim=-1, keepdim=True)
+            decoder_input_ids = torch.cat([decoder_input_ids, next_token], dim=-1)
+            
+            # Stop if all sequences have generated EOS token
+            if (next_token == self.config.eos_token_id).all():
+                break
+        
+            return decoder_input_ids
 train_dataset = load_dataset("code_x_glue_cc_code_refinement", "small", split="train")
 val_dataset = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[:10]")
 tokenized_train = train_dataset.map(tokenize, remove_columns=train_dataset.column_names)
@@ -290,5 +200,3 @@ for epoch in range(EPOCHS):
 
     bleu_score = compute_bleu(predictions, references) if predictions else 0.0
     print(f"Validation BLEU score: {bleu_score:.2f}")
-
-
