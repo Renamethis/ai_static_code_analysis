@@ -1,0 +1,83 @@
+
+================================================================================EVALUATION SAMPLES:================================================================================
+--- Sample 1 ---ORIGINAL INPUT:
+public java.util.List < TYPE_1 > METHOD_1 ( ) { java.util.ArrayList < TYPE_1 > VAR_1 = new java.util.ArrayList < TYPE_1 > ( ) ; for ( TYPE_2 VAR_2 : VAR_3 ) { VAR_1 . METHOD_2 ( VAR_2 . METHOD_1 ( ) ) ; } return VAR_1 ; } 
+
+TARGET (Expected output):
+public java.util.List < TYPE_1 > METHOD_1 ( ) { return VAR_1 ; }
+PREDICTION (Model output):
+public java.util.List < TYPE_1 > METHOD_1 ( ) { java.util.ArrayList < TYPE_1 > VAR_1 = new java.util.ArrayList < TYPE_1 > ( ) ; for ( TYPE_2 VAR_2 : VAR_3 ) { VAR_1 . METHOD_2 ( VAR_2 . METHOD_1 ( ) ) ; } return VAR_1 ; }
+Sample BLEU Score: 23.80----------------------------------------
+--- Sample 2 ---ORIGINAL INPUT:
+public TYPE_1 < TYPE_2 > METHOD_1 ( TYPE_3 VAR_1 , java.lang.String VAR_2 ) { return METHOD_1 ( VAR_1 . toString ( ) , VAR_2 ) ; } 
+
+TARGET (Expected output):
+public TYPE_1 < TYPE_2 > METHOD_1 ( TYPE_3 VAR_1 , java.lang.String VAR_2 , java.util.HashMap < java.lang.String , java.lang.String > parameters ) { return METHOD_1 ( VAR_1 . toString ( ) , VAR_2 , parameters ) ; }
+PREDICTION (Model output):
+public TYPE_1 < TYPE_2 > METHOD_1 ( TYPE_3 VAR_1 , java.lang.String VAR_2 ) { return METHOD_1 ( VAR_1 . toString ( ) , VAR_2 ) ; }
+Sample BLEU Score: 59.64----------------------------------------
+--- Sample 3 ---ORIGINAL INPUT:
+public static void main ( java.lang.String [ ] args ) throws java.lang.Exception { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . METHOD_1 ( ) ; VAR_1 . add ( VAR_2 ) ; VAR_1 . METHOD_2 ( true ) ; VAR_1 . init ( STRING_1 ) ; } 
+
+TARGET (Expected output):
+public static void main ( java.lang.String [ ] args ) throws java.lang.Exception { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . METHOD_1 ( ) ; VAR_1 . METHOD_2 ( true ) ; VAR_1 . init ( STRING_1 ) ; }
+PREDICTION (Model output):
+public static void main ( java.lang.String [ ] args ) throws java.lang.Exception { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . METHOD_1 ( ) ; VAR_1 . add ( VAR_2 ) ; VAR_1 . METHOD_2 ( true ) ; VAR_1 . init ( STRING_1 ) ; }
+Sample BLEU Score: 85.80----------------------------------------
+--- Sample 4 ---ORIGINAL INPUT:
+public void METHOD_1 ( int VAR_1 , java.lang.String VAR_2 , long VAR_3 ) { if ( VAR_1 == 0 ) { VAR_4 . METHOD_2 ( java.lang.String . METHOD_3 ( VAR_3 ) ) ; } else { VAR_4 . error ( VAR_2 ) ; } } 
+
+TARGET (Expected output):
+public void METHOD_1 ( int VAR_1 , java.lang.String VAR_2 , long VAR_3 ) { if ( VAR_1 == 0 ) { VAR_4 . METHOD_2 ( java.lang.String . METHOD_3 ( VAR_3 ) ) ; } else { VAR_4 . error ( VAR_1 ) ; } }
+PREDICTION (Model output):
+public void METHOD_1 ( int VAR_1 , java.lang.String VAR_2 , long VAR_3 ) { if ( VAR_1 == 0 ) { VAR_4 . METHOD_2 ( java.lang.String . METHOD_3 ( VAR_3 ) ) ; } else { VAR_4 . error ( VAR_2 ) ; } }
+Sample BLEU Score: 96.61----------------------------------------
+--- Sample 5 ---ORIGINAL INPUT:
+public void METHOD_1 ( java.lang.Integer VAR_1 ) { VAR_2 . METHOD_2 ( ) . METHOD_3 ( ) ; this . VAR_3 . remove ( VAR_1 ) ; VAR_2 . METHOD_2 ( ) . METHOD_4 ( ) ; } 
+
+TARGET (Expected output):
+public void METHOD_1 ( java.lang.Integer VAR_1 ) { this . VAR_3 . remove ( VAR_1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.Integer VAR_1 ) { VAR_2 . METHOD_2 ( ) . METHOD_3 ( ) ; this . VAR_3 . remove ( VAR_1 ) ; VAR_2 . METHOD_2 ( ) . METHOD_4 ( ) ; }
+Sample BLEU Score: 44.01----------------------------------------
+--- Sample 6 ---ORIGINAL INPUT:
+public static void METHOD_1 ( android.content.Context context , java.lang.String VAR_1 ) { TYPE_1 . METHOD_2 ( context , VAR_1 , false ) ; } 
+
+TARGET (Expected output):
+public static void METHOD_1 ( android.content.Context context , java.lang.String VAR_1 ) { TYPE_1 . METHOD_2 ( context , VAR_1 . toUpperCase ( ) , false ) ; }
+PREDICTION (Model output):
+public static void METHOD_1 ( android.content.Context context , java.lang.String VAR_1 ) { TYPE_1 . METHOD_2 ( context , VAR_1 , false ) ; }
+Sample BLEU Score: 87.44----------------------------------------
+--- Sample 7 ---ORIGINAL INPUT:
+private boolean METHOD_1 ( TYPE_1 VAR_1 ) { this . METHOD_2 ( VAR_1 ) ; return this . METHOD_3 ( VAR_1 ) ; } 
+
+TARGET (Expected output):
+private void METHOD_1 ( TYPE_1 VAR_1 ) { this . METHOD_2 ( VAR_1 ) ; this . METHOD_3 ( VAR_1 ) ; }
+PREDICTION (Model output):
+private boolean METHOD_1 ( TYPE_1 VAR_1 ) { this . METHOD_2 ( VAR_1 ) ; return this . METHOD_3 ( VAR_1 ) ; }
+Sample BLEU Score: 88.12----------------------------------------
+--- Sample 8 ---ORIGINAL INPUT:
+public void METHOD_1 ( ) { VAR_1 . setText ( STRING_1 ) ; METHOD_2 ( ) ; } 
+
+TARGET (Expected output):
+public void METHOD_1 ( ) { label . setText ( STRING_1 ) ; METHOD_2 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { METHOD_2 ( ) ; }
+Sample BLEU Score: 48.08----------------------------------------
+--- Sample 9 ---ORIGINAL INPUT:
+public static void main ( java.lang.String [ ] a ) { TYPE_1 . METHOD_1 ( ) ; TYPE_1 . METHOD_2 ( ) ; TYPE_1 . METHOD_3 ( ) ; TYPE_1 . METHOD_4 ( ) ; TYPE_1 . METHOD_5 ( ) ; } 
+
+TARGET (Expected output):
+public static void main ( java.lang.String [ ] a ) { }
+PREDICTION (Model output):
+public static void main ( java.lang.String [ ] a ) { TYPE_1 . METHOD_1 ( ) ; TYPE_1 . METHOD_2 ( ) ; TYPE_1 . METHOD_3 ( ) ; TYPE_1 . METHOD_4 ( ) ; TYPE_1 . METHOD_5 ( ) ; }
+Sample BLEU Score: 21.20----------------------------------------
+--- Sample 10 ---ORIGINAL INPUT:
+public boolean METHOD_1 ( java.lang.String VAR_1 ) { return ( METHOD_2 ( VAR_1 ) ) > 0 ; } 
+
+TARGET (Expected output):
+public boolean METHOD_1 ( java.lang.String VAR_1 ) { return ( METHOD_2 ( VAR_1 ) ) >= 0 ; }
+PREDICTION (Model output):
+public boolean METHOD_1 ( java.lang.String VAR_1 ) { return ( METHOD_2 ( VAR_1 ) ) > 0 ; }
+Sample BLEU Score: 91.67----------------------------------------
+Total samples evaluated: 5835================================================================================

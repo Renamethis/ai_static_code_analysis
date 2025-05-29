@@ -22,6 +22,7 @@ special_tokens = {
 }
 tokenizer.add_special_tokens(special_tokens)
 model.resize_token_embeddings(len(tokenizer))
+eval_inputs = []
 def preprocess_eval(examples):
         # Create input with clear task instruction
     inputs = []
@@ -31,7 +32,7 @@ def preprocess_eval(examples):
         # Format: <buggy> [buggy code] <sep> <fixed> [fixed code]
         input_text = f"<buggy> {buggy} <sep> <fixed>"
         target_text = f" {fixed}"
-        
+        eval_inputs.append(buggy)
         inputs.append(input_text)
         targets.append(target_text)
     
@@ -106,10 +107,8 @@ def preprocess_function(examples):
         # Format: <buggy> [buggy code] <sep> <fixed> [fixed code]
         input_text = f"<buggy> {buggy} <sep> <fixed>"
         target_text = f" {fixed}"
-        
         inputs.append(input_text)
         targets.append(target_text)
-    
     # Tokenize inputs
     model_inputs = tokenizer(
         inputs,
@@ -259,7 +258,6 @@ class GenerativeTrainer(Trainer):
         return (loss, padded_predictions, labels)
 
 bleumetric = load("bleu")
-eval_inputs = []
 
 def compute_metrics(eval_preds):
     try:
@@ -296,7 +294,6 @@ def compute_metrics(eval_preds):
                 if eval_inputs and i < len(eval_inputs):
                     file.write(f"ORIGINAL INPUT:\n{eval_inputs[i]}")
                     file.write("\n")
-                
                 file.write(f"TARGET (Expected output):\n{decoded_labels[i]}")
                 file.write(f"\nPREDICTION (Model output):\n{decoded_preds[i]}")
                 
@@ -331,7 +328,7 @@ def compute_metrics(eval_preds):
 
 # 4. Tokenize dataset
 tokenizedtrain = train.map(preprocess_function, batched=True, remove_columns=train.column_names)
-tokenizedval = val.map(preprocess_function, batched=True, remove_columns=val.column_names)
+tokenizedval = val.map(preprocess_eval, batched=True, remove_columns=val.column_names)
 
 # 5. Use Seq2Seq data collator
 datacollator = DataCollatorForSeq2Seq(
@@ -344,14 +341,15 @@ datacollator = DataCollatorForSeq2Seq(
 trainingargs =  Seq2SeqTrainingArguments(
     output_dir="./codegpt-code-refinement-improved",
     learning_rate=2e-5,
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=4,
+    per_device_train_batch_size=16,
+    save_steps=10000,
+    per_device_eval_batch_size=16,
     gradient_accumulation_steps=2,
     num_train_epochs=10,
     warmup_steps=500,
     weight_decay=0.01,
     greater_is_better=True,
-    logging_steps=100,
+    logging_steps=300,
     fp16=True,
     predict_with_generate=True
 )
@@ -372,8 +370,8 @@ print("Starting training...")
 trainresult = trainer.train()
 
 # Save the final model
-trainer.save_model()
-trainer.save_state()
+# trainer.save_model()
+# trainer.save_state()
 
 # Evaluate on validation set
 print("\nEvaluating on validation set...")
