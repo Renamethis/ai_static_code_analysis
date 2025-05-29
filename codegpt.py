@@ -22,7 +22,81 @@ special_tokens = {
 }
 tokenizer.add_special_tokens(special_tokens)
 model.resize_token_embeddings(len(tokenizer))
-
+def preprocess_eval(examples):
+        # Create input with clear task instruction
+    inputs = []
+    targets = []
+    
+    for buggy, fixed in zip(examples['buggy'], examples['fixed']):
+        # Format: <buggy> [buggy code] <sep> <fixed> [fixed code]
+        input_text = f"<buggy> {buggy} <sep> <fixed>"
+        target_text = f" {fixed}"
+        
+        inputs.append(input_text)
+        targets.append(target_text)
+    
+    # Tokenize inputs
+    model_inputs = tokenizer(
+        inputs,
+        max_length=128,
+        truncation=True,
+        padding='max_length',
+        return_tensors=None,
+        padding_side='left'
+    )
+    
+    # Tokenize targets
+    with tokenizer.as_target_tokenizer():
+        labels = tokenizer(
+            targets,
+            max_length=128,
+            truncation=True,
+            padding='max_length',
+            return_tensors=None,
+            padding_side='left'
+        )
+    
+    # Combine input and target tokens for causal LM training
+    combined_input_ids = []
+    combined_attention_mask = []
+    combined_labels = []
+    
+    for i in range(len(inputs)):
+        # Find where padding starts in input
+        input_ids = model_inputs['input_ids'][i]
+        attention_mask = model_inputs['attention_mask'][i]
+        label_ids = labels['input_ids'][i]
+        
+        # Find the position of <fixed> token
+        fixed_token_id = tokenizer.convert_tokens_to_ids("<fixed>")
+        fixed_pos = input_ids.index(fixed_token_id) if fixed_token_id in input_ids else len(input_ids)
+        
+        # Combine sequences
+        combined_seq = input_ids[:fixed_pos+1] + label_ids
+        combined_seq = combined_seq[:256]  # Truncate to max length
+        
+        # Create attention mask
+        combined_mask = [1] * len(combined_seq)
+        
+        # Create labels (mask the input part)
+        combined_label = [-100] * (fixed_pos+1) + label_ids
+        combined_label = combined_label[:256]
+        
+        # Pad sequences
+        pad_length = 256 - len(combined_seq)
+        combined_seq += [tokenizer.pad_token_id] * pad_length
+        combined_mask += [0] * pad_length
+        combined_label += [-100] * pad_length
+        
+        combined_input_ids.append(combined_seq[:256])
+        combined_attention_mask.append(combined_mask[:256])
+        combined_labels.append(combined_label[:256])
+    
+    return {
+        'input_ids': combined_input_ids,
+        'attention_mask': combined_attention_mask,
+        'labels': combined_labels
+    }
 def preprocess_function(examples):
     # Create input with clear task instruction
     inputs = []
