@@ -208,34 +208,35 @@ def compute_metrics(eval_preds):
         decoded_preds = [pred.strip() for pred in decoded_preds]
         decoded_labels = [label.strip() for label in decoded_labels]
         
-        # Print sample predictions for inspection
-        print("\n" + "="*80)
-        print("EVALUATION SAMPLES:")
-        print("="*80)
-        
-        num_samples_to_print = min(10, len(decoded_preds))
-        for i in range(num_samples_to_print):
-            print(f"\n--- Sample {i+1} ---")
+        with open("output.txt", "w") as file:
+            # Print sample predictions for inspection
+            file.write("\n" + "="*80)
+            file.write("EVALUATION SAMPLES:")
+            file.write("="*80)
             
-            # If we have stored inputs, print them
-            if eval_inputs and i < len(eval_inputs):
-                print(f"ORIGINAL INPUT:\n{eval_inputs[i]}")
-                print()
+            num_samples_to_print = min(10, len(decoded_preds))
+            for i in range(num_samples_to_print):
+                file.write(f"\n--- Sample {i+1} ---")
+                
+                # If we have stored inputs, print them
+                if eval_inputs and i < len(eval_inputs):
+                    file.write(f"ORIGINAL INPUT:\n{eval_inputs[i]}")
+                    file.write("\n")
+                
+                file.write(f"TARGET (Expected output):\n{decoded_labels[i]}")
+                file.write(f"\nPREDICTION (Model output):\n{decoded_preds[i]}")
+                
+                # Calculate sample BLEU score
+                sample_bleu = bleumetric.compute(
+                    predictions=[decoded_preds[i]], 
+                    references=[[decoded_labels[i]]]
+                )
+                file.write(f"\nSample BLEU Score: {sample_bleu['bleu'] * 100:.2f}")
+                file.write("-" * 40)
             
-            print(f"TARGET (Expected output):\n{decoded_labels[i]}")
-            print(f"\nPREDICTION (Model output):\n{decoded_preds[i]}")
+            file.write(f"\nTotal samples evaluated: {len(decoded_preds)}")
+            file.write("="*80 + "\n")
             
-            # Calculate sample BLEU score
-            sample_bleu = bleumetric.compute(
-                predictions=[decoded_preds[i]], 
-                references=[[decoded_labels[i]]]
-            )
-            print(f"\nSample BLEU Score: {sample_bleu['bleu'] * 100:.2f}")
-            print("-" * 40)
-        
-        print(f"\nTotal samples evaluated: {len(decoded_preds)}")
-        print("="*80 + "\n")
-        
         # Clear eval_inputs for next evaluation
         eval_inputs.clear()
         
