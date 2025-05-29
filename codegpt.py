@@ -8,8 +8,8 @@ from evaluate import load
 import torch
 
 # 1. Load dataset
-train = load_dataset("code_x_glue_cc_code_refinement", "small", split="train[:1%]")
-val = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[:1%]")
+train = load_dataset("code_x_glue_cc_code_refinement", "small", split="train")
+val = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation")
 # 2. Load tokenizer and model
 model_name = "microsoft/CodeGPT-small-java"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -139,7 +139,7 @@ class GenerativeTrainer(Trainer):
         # Generate predictions
         gen_kwargs = {
             "max_length": 256,
-            "num_beams": 4,
+            "num_beams": 8,
             "temperature": 0.5,
             "do_sample": False,
             "early_stopping": True,
@@ -213,7 +213,7 @@ def compute_metrics(eval_preds):
         print("EVALUATION SAMPLES:")
         print("="*80)
         
-        num_samples_to_print = min(3, len(decoded_preds))
+        num_samples_to_print = min(10, len(decoded_preds))
         for i in range(num_samples_to_print):
             print(f"\n--- Sample {i+1} ---")
             
