@@ -117,18 +117,36 @@ class CodeLlamaWithLinformer(LlamaForCausalLM):
         # Load original model first
         model = super().from_pretrained(modelnameorpath, **kwargs)
         
-        # Replace attention layers
+        # Debug version with shape checking
         for i, layer in enumerate(model.model.layers):
-            originalattn = layer.self_attn
-            newattn = LinformerAttention(model.config, i, k=k)
+            original_attn = layer.self_attn
+            new_attn = LinformerAttention(model.config, i, k=k)
             
-            # Copy weights from original attention
-            newattn.qproj.weight.data = originalattn.qproj.weight.data
-            newattn.kproj.weight.data = originalattn.kproj.weight.data
-            newattn.vproj.weight.data = originalattn.vproj.weight.data
-            newattn.oproj.weight.data = originalattn.oproj.weight.data
+            # Move to correct device and dtype
+            device = original_attn.q_proj.weight.device
+            dtype = original_attn.q_proj.weight.dtype
+            new_attn = new_attn.to(device=device, dtype=dtype)
             
-            layer.self_attn = newattn
+            # Debug: Print shapes and types
+            print(f"Layer {i}:")
+            print(f"  Original q_proj shape: {original_attn.q_proj.weight.shape}, dtype: {original_attn.q_proj.weight.dtype}")
+            print(f"  New q_proj shape: {new_attn.q_proj.weight.shape}, dtype: {new_attn.q_proj.weight.dtype}")
+            
+            # Copy weights with shape verification
+            with torch.no_grad():
+                for proj_name in ['q_proj', 'k_proj', 'v_proj', 'o_proj']:
+                    orig_proj = getattr(original_attn, proj_name)
+                    new_proj = getattr(new_attn, proj_name)
+                    
+                    if orig_proj.weight.shape != new_proj.weight.shape:
+                        raise ValueError(f"Shape mismatch for {proj_name}: {orig_proj.weight.shape} vs {new_proj.weight.shape}")
+                    
+                    new_proj.weight.copy_(orig_proj.weight)
+                    
+                    if orig_proj.bias is not None and new_proj.bias is not None:
+                        new_proj.bias.copy_(orig_proj.bias)
+            
+            layer.self_attn = new_attn
         
         return model
 
