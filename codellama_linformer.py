@@ -7,7 +7,8 @@ from transformers import (
     CodeLlamaTokenizer,
     Trainer, 
     TrainingArguments,
-    DataCollatorForSeq2Seq
+    DataCollatorForSeq2Seq,
+    AutoTokenizer
 )
 from datasets import load_dataset
 import numpy as np
@@ -18,31 +19,31 @@ from evaluate import load
 class LinformerAttention(nn.Module):
     """Linformer attention mechanism to replace standard attention"""
     
-    def init(self, config, layeridx, k=256):
-        super().init()
+    def __init__(self, config, layeridx, k=256):
+        super().__init__()
         self.config = config
         self.layeridx = layeridx
-        self.hiddensize = config.hiddensize
-        self.numheads = config.numattentionheads
-        self.headdim = self.hiddensize // self.numheads
+        self.hidden_size = config.hidden_size
+        self.numheads = config.num_attention_heads
+        self.headdim = self.hidden_size // self.numheads
         self.k = k  # Compressed sequence length
         
         # Standard attention projections
-        self.qproj = nn.Linear(self.hiddensize, self.hiddensize, bias=False)
-        self.kproj = nn.Linear(self.hiddensize, self.hiddensize, bias=False)
-        self.vproj = nn.Linear(self.hiddensize, self.hiddensize, bias=False)
-        self.oproj = nn.Linear(self.hiddensize, self.hiddensize, bias=False)
+        self.qproj = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
+        self.kproj = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
+        self.vproj = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
+        self.oproj = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
         
         # Linformer compression matrices
-        self.E = nn.Parameter(torch.randn(config.maxpositionembeddings, k))
-        self.F = nn.Parameter(torch.randn(config.maxpositionembeddings, k))
+        self.E = nn.Parameter(torch.randn(config.max_position_embeddings, k))
+        self.F = nn.Parameter(torch.randn(config.max_position_embeddings, k))
         
-        self.dropout = nn.Dropout(config.attentiondropout)
+        self.dropout = nn.Dropout(config.attention_dropout)
         
     def forward(
         self,
         hiddenstates: torch.Tensor,
-        attentionmask: Optionaltorch.Tensor = None,
+        attentionmask: Optional[torch.Tensor] = None,
         positionids: Optional[torch.LongTensor] = None,
         pastkeyvalue: Optional[Tuple[torch.Tensor]] = None,
         outputattentions: bool = False,
@@ -65,7 +66,7 @@ class LinformerAttention(nn.Module):
         # Apply Linformer compression
         if qlen > self.k:
             # Compress keys and values
-            Etruncated = self.E:q_len, :.unsqueeze(0).unsqueeze(0)  # 1, 1, q_len, k
+            Etruncated = self.E[:qlen, :].unsqueeze(0).unsqueeze(0)  # 1, 1, q_len, k
             Ftruncated = self.F[:qlen, :].unsqueeze(0).unsqueeze(0)  # 1, 1, q_len, k
             
             # Compress: bsz, num_heads, q_len, head_dim -> bsz, num_heads, k, head_dim
@@ -94,7 +95,7 @@ class LinformerAttention(nn.Module):
         
         # Reshape and project output
         attnoutput = attnoutput.transpose(1, 2).contiguous()
-        attnoutput = attnoutput.reshape(bsz, qlen, self.hiddensize)
+        attnoutput = attnoutput.reshape(bsz, qlen, self.hidden_size)
         attnoutput = self.oproj(attnoutput)
         
         return attnoutput, attnweights if outputattentions else None, pastkeyvalue
@@ -102,23 +103,23 @@ class LinformerAttention(nn.Module):
 class CodeLlamaWithLinformer(LlamaForCausalLM):
     """CodeLlama model with Linformer attention for efficient long sequence processing"""
     
-    def init(self, config, k=256):
-        super().init(config)
+    def __init__(self, config, k=256):
+        super().__init__(config)
         self.k = k
         
         # Replace attention layers with Linformer
         for i, layer in enumerate(self.model.layers):
-            layer.selfattn = LinformerAttention(config, i, k=k)
+            layer.self_attn = LinformerAttention(config, i, k=k)
     
     @classmethod
-    def frompretrained(cls, modelnameorpath, k=256, **kwargs):
+    def from_pretrained(cls, modelnameorpath, k=256, **kwargs):
         """Load pretrained model and replace attention layers"""
         # Load original model first
-        model = super().frompretrained(modelnameorpath, **kwargs)
+        model = super().from_pretrained(modelnameorpath, **kwargs)
         
         # Replace attention layers
         for i, layer in enumerate(model.model.layers):
-            originalattn = layer.selfattn
+            originalattn = layer.self_attn
             newattn = LinformerAttention(model.config, i, k=k)
             
             # Copy weights from original attention
@@ -127,14 +128,14 @@ class CodeLlamaWithLinformer(LlamaForCausalLM):
             newattn.vproj.weight.data = originalattn.vproj.weight.data
             newattn.oproj.weight.data = originalattn.oproj.weight.data
             
-            layer.selfattn = newattn
+            layer.self_attn = newattn
         
         return model
 
 class Seq2SeqCodeLlamaTrainer:
     """Trainer for seq2seq code refinement using CodeLlama with Linformer"""
     
-    def init(self, modelname="codellama/CodeLlama-7b-Python-hf", k=256):
+    def __init__(self, modelname="codellama/CodeLlama-7b-Python-hf", k=256):
         self.modelname = modelname
         self.k = k
         self.setupmodelandtokenizer()
@@ -143,24 +144,24 @@ class Seq2SeqCodeLlamaTrainer:
     def setupmodelandtokenizer(self):
         """Initialize model and tokenizer"""
         print("Loading tokenizer...")
-        self.tokenizer = CodeLlamaTokenizer.frompretrained(self.modelname)
+        self.tokenizer = CodeLlamaTokenizer.from_pretrained(self.modelname)
         
         # Add special tokens for seq2seq
         specialtokens = {
-            "padtoken": "<pad>",
-            "bostoken": "<s>", 
-            "eostoken": "</s>",
-            "septoken": "<sep>"
+            "pad_token": "<pad>",
+            "bos_token": "<s>", 
+            "eos_token": "</s>",
+            "sep_token": "<sep>"
         }
         
-        self.tokenizer.addspecialtokens(specialtokens)
+        self.tokenizer.add_special_tokens(specialtokens)
         
         print(f"Loading model with Linformer (k={self.k})...")
-        self.model = CodeLlamaWithLinformer.frompretrained(
+        self.model = CodeLlamaWithLinformer.from_pretrained(
             self.modelname,
             k=self.k,
-            torchdtype=torch.float16,
-            devicemap="auto"
+            torch_dtype=torch.float16,
+            device_map="auto"
         )
         
         # Resize embeddings for new tokens
@@ -174,15 +175,15 @@ class Seq2SeqCodeLlamaTrainer:
     def loadandpreprocessdata(self, maxlength=1024):
         """Load and preprocess the code refinement dataset"""
         print("Loading dataset...")
-        dataset = loaddataset("codexgluecccoderefinement")
+        dataset = load_dataset("code_x_glue_cc_code_refinement", "small")
         
         def preprocessfunction(examples):
             # Create seq2seq format: "Refine: <buggycode> <sep>" -> "<refinedcode>"
-            inputs = 
+            inputs = [
                 f"Refine: {buggy} <sep>"
-                for buggy in examples["buggy"
+                for buggy in examples["buggy"]
             ]
-            targets = examples"fixed"
+            targets = examples["fixed"]
             
             # Tokenize inputs
             modelinputs = self.tokenizer(
@@ -207,46 +208,46 @@ class Seq2SeqCodeLlamaTrainer:
             # Labels: target[1:] + <eos>
             
             decoderinputids = []
-            labelslist = 
+            labelslist = []
             
             for labelseq in labels["inputids"]:
                 # Add BOS at the beginning for decoder input
-                decoderinput = [self.tokenizer.bostokenid] + labelseq:-1
+                decoderinput = [self.tokenizer.bostokenid] + labelseq[:-1]
                 # Labels are the target sequence shifted by one
                 label = labelseq[1:] + [self.tokenizer.eostokenid]
                 
                 # Pad to same length
                 maxlen = max(len(decoderinput), len(label))
-                decoderinput.extend(self.tokenizer.pad_token_id  (max_len - len(decoder_input)))
-                label.extend([-100]  (maxlen - len(label)))  # -100 is ignored in loss
+                decoderinput.extend(self.tokenizer.pad_token_id,  (max_len - len(decoder_input)))
+                label.extend([-100], (maxlen - len(label)))  # -100 is ignored in loss
                 
                 decoderinputids.append(decoderinput)
                 labelslist.append(label)
             
-            modelinputs"decoder_input_ids" = decoderinputids
+            modelinputs["decoder_input_ids"] = decoderinputids
             modelinputs["labels"] = labelslist
             
             return modelinputs
         
         # Preprocess datasets
-        self.traindataset = dataset"train".map(
+        self.traindataset = dataset["train"].map(
             preprocessfunction,
             batched=True,
-            removecolumns=dataset"train".columnnames,
+            remove_columns=dataset["train"].column_names,
             desc="Preprocessing train dataset"
         )
         
-        self.valdataset = dataset"validation".map(
+        self.valdataset = dataset["validation"].map(
             preprocessfunction,
             batched=True,
-            removecolumns=dataset"validation".columnnames,
+            remove_columns=dataset["validation"].column_names,
             desc="Preprocessing validation dataset"
         )
         
-        self.testdataset = dataset"test".map(
+        self.testdataset = dataset["test"].map(
             preprocessfunction,
             batched=True,
-            removecolumns=dataset"test".columnnames,
+            remove_columns=dataset["test"].column_names,
             desc="Preprocessing test dataset"
         )
         
@@ -266,7 +267,7 @@ class Seq2SeqCodeLlamaTrainer:
         decodedlabels = self.tokenizer.batchdecode(labels, skipspecialtokens=True)
         
         # Clean up whitespace
-        decodedpreds = pred.strip() for pred in decoded_preds
+        decodedpreds = [pred.strip() for pred in decoded_preds]
         decodedlabels = [label.strip() for label in decodedlabels]
         
         # Compute BLEU
@@ -283,9 +284,9 @@ class Seq2SeqCodeLlamaTrainer:
         
         return {
             "bleu": bleuresult["bleu"],
-            "rouge1": rougeresult"rouge1",
+            "rouge1": rougeresult["rouge1"],
             "rouge2": rougeresult["rouge2"],
-            "rougeL": rougeresult"rougeL",
+            "rougeL": rougeresult["rougeL"],
         }
     
 def train(self, output_dir="./codellama-linformer-refinement", num_epochs=3):
@@ -348,7 +349,7 @@ def evaluate(self, trainer=None, datasetsplit="test"):
     """Evaluate the model on test set"""
     if trainer is None:
         # Load trained model for evaluation
-        self.model = CodeLlamaWithLinformer.frompretrained(
+        self.model = CodeLlamaWithLinformer.from_pretrained(
             "./codellama-linformer-refinement",
             k=self.k
         )
@@ -360,8 +361,8 @@ def evaluate(self, trainer=None, datasetsplit="test"):
     }[datasetsplit]
     
     # Generate predictions
-    predictions = 
-    references = 
+    predictions = []
+    references = []
     
     print(f"Evaluating on {datasetsplit} set...")
     
@@ -370,7 +371,7 @@ def evaluate(self, trainer=None, datasetsplit="test"):
             print(f"Processing example {i}/{len(evaldataset)}")
         
         # Prepare input
-        inputtext = f"Refine: {example'buggy'} <sep>"
+        inputtext = f"Refine: {example['buggy']} <sep>"
         inputs = self.tokenizer(
             inputtext,
             maxlength=1024,
@@ -394,7 +395,7 @@ def evaluate(self, trainer=None, datasetsplit="test"):
         pred = pred.replace(inputtext, "").strip()  # Remove input part
         
         predictions.append(pred)
-        references.append(example'fixed')
+        references.append(example['fixed'])
     
     # Compute metrics
     bleuresult = self.bleumetric.compute(
@@ -409,9 +410,9 @@ def evaluate(self, trainer=None, datasetsplit="test"):
     
     results = {
         "bleu": bleuresult["bleu"],
-        "rouge1": rougeresult"rouge1",
+        "rouge1": rougeresult["rouge1"],
         "rouge2": rougeresult["rouge2"],
-        "rougeL": rougeresult"rougeL",
+        "rougeL": rougeresult["rougeL"],
     }
     
     print(f"Evaluation Results on {datasetsplit}:")
@@ -449,17 +450,17 @@ def computemetrics(self, evalpreds):
     
     return {
         "bleu": bleuresult["bleu"],
-        "rouge1": rougeresult"rouge1",
+        "rouge1": rougeresult["rouge1"],
         "rouge2": rougeresult["rouge2"],
-        "rougeL": rougeresult"rougeL",
+        "rougeL": rougeresult["rougeL"],
     }
 # Training loop usage
 if __name__ == "__main__":
     # Initialize trainer
-    trainer_instance = Seq2SeqCodeLlamaTrainer(k=256)
+    trainer_instance = Seq2SeqCodeLlamaTrainer()
     
     # Load and preprocess data
-    trainer_instance.load_and_preprocess_data()
+    trainer_instance.loadandpreprocessdata()
     
     # Train the model
     trainer = trainer_instance.train(
