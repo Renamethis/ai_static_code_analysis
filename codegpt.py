@@ -13,7 +13,53 @@ val = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[
 # 2. Load tokenizer and model
 model_name = "microsoft/CodeGPT-small-java"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+from transformers import GPT2LMHeadModel, GPT2Config
+import torch.nn as nn
+
+class CodeGPTWithDropout(GPT2LMHeadModel):
+    def __init__(self, config):
+        super().__init__(config)
+        
+        # Add additional dropout layers
+        self.input_dropout = nn.Dropout(config.dropout_rate if hasattr(config, 'dropout_rate') else 0.1)
+        self.output_dropout = nn.Dropout(config.dropout_rate if hasattr(config, 'dropout_rate') else 0.1)
+        
+        # Modify existing layers to ensure dropout is applied
+        for layer in self.transformer.h:
+            # Add dropout to attention output
+            if not hasattr(layer.attn, 'dropout'):
+                layer.attn.dropout = nn.Dropout(config.attn_pdrop)
+            
+            # Add dropout to MLP output
+            if not hasattr(layer.mlp, 'dropout'):
+                layer.mlp.dropout = nn.Dropout(config.resid_pdrop)
+    
+    def forward(self, input_ids=None, **kwargs):
+        # Apply input dropout to embeddings
+        if input_ids is not None:
+            inputs_embeds = self.transformer.wte(input_ids)
+            inputs_embeds = self.input_dropout(inputs_embeds)
+            kwargs['inputs_embeds'] = inputs_embeds
+            kwargs.pop('input_ids', None)
+        
+        # Standard forward pass
+        outputs = super().forward(**kwargs)
+        
+        # Apply output dropout to logits
+        if hasattr(outputs, 'logits'):
+            outputs.logits = self.output_dropout(outputs.logits)
+        
+        return outputs
+
+# Usage
+config = GPT2Config.from_pretrained(model_name)
+config.dropout_rate = 0.1
+config.attn_pdrop = 0.1
+config.resid_pdrop = 0.1
+config.embd_pdrop = 0.1
+
+model = CodeGPTWithDropout(config)
+
 
 # Add special tokens for better task understanding
 special_tokens = {
