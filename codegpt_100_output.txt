@@ -1,0 +1,503 @@
+
+================================================================================EVALUATION SAMPLES:================================================================================
+--- Sample 1 ---TARGET (Expected output):
+public java.util.List < TYPE_1 > METHOD_1 ( ) { return VAR_1 ; }
+PREDICTION (Model output):
+public java.util.List < TYPE_1 > METHOD_1 ( ) { return ; }
+Sample BLEU Score: 79.91----------------------------------------
+--- Sample 2 ---TARGET (Expected output):
+public TYPE_1 < TYPE_2 > METHOD_1 ( TYPE_3 VAR_1 , java.lang.String VAR_2 , java.util.HashMap < java.lang.String , java.lang.String > parameters ) { return METHOD_1 ( VAR_1 . toString ( ) , VAR_2 , parameters ) ; }
+PREDICTION (Model output):
+public TYPE_1 < TYPE_2 > METHOD_1 ( TYPE_3 VAR_1 , java.lang.String VAR_2 ) { return METHOD_1 ( VAR_1 . toString ( ) , VAR_2 , null ) ; }
+Sample BLEU Score: 61.95----------------------------------------
+--- Sample 3 ---TARGET (Expected output):
+public static void main ( java.lang.String [ ] args ) throws java.lang.Exception { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . METHOD_1 ( ) ; VAR_1 . METHOD_2 ( true ) ; VAR_1 . init ( STRING_1 ) ; }
+PREDICTION (Model output):
+public static void main ( java.lang.String [ ] args ) throws java.lang.Exception { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . METHOD_1 ( ) ; VAR_1 . add ( VAR_2 ) ; VAR_1 . init ( STRING_1 ) ; }
+Sample BLEU Score: 91.60----------------------------------------
+--- Sample 4 ---TARGET (Expected output):
+public void METHOD_1 ( int VAR_1 , java.lang.String VAR_2 , long VAR_3 ) { if ( VAR_1 == 0 ) { VAR_4 . METHOD_2 ( java.lang.String . METHOD_3 ( VAR_3 ) ) ; } else { VAR_4 . error ( VAR_1 ) ; } }
+PREDICTION (Model output):
+public void METHOD_1 ( int VAR_1 , java.lang.String VAR_2 , long VAR_3 ) { if ( VAR_1 == 0 ) { VAR_4 . METHOD_2 ( java.lang.String . METHOD_3 ( VAR_3 ) ) ; } else { VAR_4 . error ( VAR_1 , null ) ; } }
+Sample BLEU Score: 95.39----------------------------------------
+--- Sample 5 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.Integer VAR_1 ) { this . VAR_3 . remove ( VAR_1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.Integer VAR_1 ) { VAR_2 . METHOD_2 ( ) . METHOD_3 ( ) ; this . VAR_3 . remove ( VAR_1 ) ; VAR_2 . METHOD_2 ( ) . METHOD_4 ( ) ; return ; }
+Sample BLEU Score: 42.19----------------------------------------
+--- Sample 6 ---TARGET (Expected output):
+public static void METHOD_1 ( android.content.Context context , java.lang.String VAR_1 ) { TYPE_1 . METHOD_2 ( context , VAR_1 . toUpperCase ( ) , false ) ; }
+PREDICTION (Model output):
+public static void METHOD_1 ( android.content.Context context , java.lang.String VAR_1 ) { TYPE_1 . METHOD_2 ( context , VAR_1 , false , false ) ; }
+Sample BLEU Score: 87.57----------------------------------------
+--- Sample 7 ---TARGET (Expected output):
+private void METHOD_1 ( TYPE_1 VAR_1 ) { this . METHOD_2 ( VAR_1 ) ; this . METHOD_3 ( VAR_1 ) ; }
+PREDICTION (Model output):
+public boolean METHOD_1 ( TYPE_1 VAR_1 ) { this . METHOD_2 ( VAR_1 ) ; return this . METHOD_3 ( VAR_1 ) ; }
+Sample BLEU Score: 87.50----------------------------------------
+--- Sample 8 ---TARGET (Expected output):
+public void METHOD_1 ( ) { label . setText ( STRING_1 ) ; METHOD_2 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { VAR_1 . setText ( STRING_1 ) ; }
+Sample BLEU Score: 60.69----------------------------------------
+--- Sample 9 ---TARGET (Expected output):
+public static void main ( java.lang.String [ ] a ) { }
+PREDICTION (Model output):
+public static void main ( java.lang.String [ ] a ) { TYPE_1 . METHOD_1 ( ) ; TYPE_1 . METHOD_2 ( ) ; TYPE_1 . METHOD_3 ( ) ; TYPE_1 . METHOD_4 ( ) ; return ; }
+Sample BLEU Score: 24.20----------------------------------------
+--- Sample 10 ---TARGET (Expected output):
+public boolean METHOD_1 ( java.lang.String VAR_1 ) { return ( METHOD_2 ( VAR_1 ) ) >= 0 ; }
+PREDICTION (Model output):
+public boolean METHOD_1 ( java.lang.String VAR_1 ) { return ( METHOD_2 ( VAR_1 ) ) < 0 ; }
+Sample BLEU Score: 88.38----------------------------------------
+--- Sample 11 ---TARGET (Expected output):
+private void METHOD_1 ( java.lang.Throwable VAR_1 ) { for ( TYPE_1 VAR_2 : VAR_3 ) { VAR_2 . METHOD_3 ( VAR_1 ) ; } }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.Throwable VAR_1 ) { for ( TYPE_1 VAR_2 : VAR_3 ) { VAR_4 . METHOD_2 ( VAR_1 ) ; METHOD_3 ( VAR_4 , VAR_2 ) ; } } }
+Sample BLEU Score: 69.76----------------------------------------
+--- Sample 12 ---TARGET (Expected output):
+public TYPE_1 METHOD_1 ( java.lang.String name ) { TYPE_1 VAR_1 = new TYPE_1 ( name ) ; add ( VAR_1 ) ; return VAR_1 ; }
+PREDICTION (Model output):
+public TYPE_1 METHOD_1 ( java.lang.String name ) { TYPE_1 VAR_1 = new TYPE_1 ( name ) ; return VAR_2 . add ( VAR_1 ) ; }
+Sample BLEU Score: 89.74----------------------------------------
+--- Sample 13 ---TARGET (Expected output):
+public void METHOD_1 ( ) { VAR_1 . setState ( 1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { }
+Sample BLEU Score: 32.71----------------------------------------
+--- Sample 14 ---TARGET (Expected output):
+private static TYPE_1 METHOD_1 ( int VAR_1 ) { return new TYPE_1 ( VAR_1 , new TYPE_2 ( ) ) ; }
+PREDICTION (Model output):
+public static TYPE_1 METHOD_1 ( int VAR_1 ) { return new TYPE_1 ( VAR_1 , new TYPE_2 ( ) ; }
+Sample BLEU Score: 91.49----------------------------------------
+--- Sample 15 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 result ) { }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 result ) { if ( ( VAR_1 ) != ( VAR_2 ) ) { VAR_3 = result . METHOD_2 ( ) ; if ( ( VAR_1 ) == ( VAR_4 ) ) { METHOD_3 ( ) ; } } } }
+Sample BLEU Score: 16.52----------------------------------------
+--- Sample 16 ---TARGET (Expected output):
+public static TYPE_1 METHOD_1 ( final TYPE_2 VAR_1 , final java.lang.Object msg ) { TYPE_3 VAR_2 = TYPE_4 . METHOD_2 ( VAR_1 ) ; return TYPE_5 . METHOD_1 ( VAR_2 , msg , null ) ; }
+PREDICTION (Model output):
+public static TYPE_1 METHOD_1 ( final TYPE_2 VAR_1 , final java.lang.Object msg ) { TYPE_3 VAR_2 = TYPE_4 . METHOD_2 ( VAR_1 ) ; return TYPE_5 . METHOD_1 ( VAR_2 , msg ) ; } }
+Sample BLEU Score: 94.46----------------------------------------
+--- Sample 17 ---TARGET (Expected output):
+public boolean execute ( TYPE_1 VAR_1 ) { return VAR_1 . METHOD_1 ( this . fileName ) ; }
+PREDICTION (Model output):
+public boolean execute ( TYPE_1 VAR_1 ) { return VAR_1 . METHOD_1 ( this ) ; }
+Sample BLEU Score: 86.07----------------------------------------
+--- Sample 18 ---TARGET (Expected output):
+public boolean METHOD_1 ( TYPE_1 node ) { boolean set = METHOD_2 ( node ) ; if ( set ) METHOD_3 ( VAR_1 . get ( ( ( VAR_1 . size ( ) ) - 1 ) ) ) ; return set ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 node ) { METHOD_3 ( VAR_1 . get ( ( ( VAR_1 . size ( ) ) - 1 ) ) ) ; METHOD_2 ( node , false ) ; }
+Sample BLEU Score: 68.61----------------------------------------
+--- Sample 19 ---TARGET (Expected output):
+public java.lang.String toString ( ) { return java.lang.String.format ( STRING_1 , getClass ( ) . getName ( ) , getId ( ) , name ) ; }
+PREDICTION (Model output):
+public java.lang.String toString ( ) { return java.lang.String.format ( STRING_1 , getClass ( ) . getName ( ) , id ) ; } }
+Sample BLEU Score: 82.50----------------------------------------
+--- Sample 20 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 , long VAR_2 , long VAR_3 ) { if ( ( this ) != ( VAR_4 ) ) { return ; } }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 , long VAR_2 , long VAR_3 ) { if ( ( this ) == ( VAR_4 ) ) { return ; } METHOD_2 ( false ) ; } }
+Sample BLEU Score: 77.67----------------------------------------
+--- Sample 21 ---TARGET (Expected output):
+public TYPE_1 METHOD_1 ( TYPE_2 id ) { if ( VAR_1 . METHOD_2 ( id . id ) ) { return VAR_1 . get ( id . id ) ; } else { return null ; } }
+PREDICTION (Model output):
+public TYPE_1 METHOD_1 ( TYPE_2 id ) { if ( VAR_1 . METHOD_2 ( id ) ) { return VAR_1 . get ( id ) ; } else { return null ; } }
+Sample BLEU Score: 88.43----------------------------------------
+--- Sample 22 ---TARGET (Expected output):
+public boolean METHOD_1 ( ) { return ( this . index ) < ( this . length ) ; }
+PREDICTION (Model output):
+public boolean METHOD_1 ( ) { return ( index ) < ( length ) ; }
+Sample BLEU Score: 63.56----------------------------------------
+--- Sample 23 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 ) { }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 ) { METHOD_2 ( VAR_2 . get ( VAR_3 . METHOD_3 ( ) ) ) ; VAR_2 . remove ( VAR_3 . METHOD_3 ( ) , false ) ; }
+Sample BLEU Score: 23.25----------------------------------------
+--- Sample 24 ---TARGET (Expected output):
+public void METHOD_1 ( ) { TYPE_1 . METHOD_2 ( VAR_1 , STRING_1 ) ; METHOD_4 ( ) ; super . METHOD_1 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { METHOD_3 ( false ) ; METHOD_4 ( ) ; super . METHOD_1 ( ) ; METHOD_4 ( ) ; }
+Sample BLEU Score: 59.57----------------------------------------
+--- Sample 25 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 result ) { VAR_1 . METHOD_3 ( 0 ) ; VAR_2 . add ( 0 , result ) ; VAR_3 . METHOD_4 ( VAR_2 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 result ) { VAR_1 . METHOD_3 ( 0 ) ; VAR_2 . add ( 0 , result ) ; VAR_3 . METHOD_4 ( VAR_2 ) ; }
+Sample BLEU Score: 100.00----------------------------------------
+--- Sample 26 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String filename ) { this . VAR_1 = new TYPE_1 ( filename ) ; java.lang.Thread t = new java.lang.Thread ( this . VAR_1 ) ; t . start ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.String filename ) { this . VAR_1 = new TYPE_1 ( filename ) ; t . start ( ) ; t . start ( ) ; this . start ( ) ; }
+Sample BLEU Score: 64.02----------------------------------------
+--- Sample 27 ---TARGET (Expected output):
+TYPE_1 < TYPE_2 > METHOD_1 ( java.lang.String VAR_1 , java.lang.String VAR_2 , java.lang.String VAR_3 , java.lang.String VAR_4 , java.lang.Integer VAR_5 , java.lang.Integer size ) ;
+PREDICTION (Model output):
+TYPE_1 < TYPE_2 > METHOD_1 ( java.lang.String VAR_1 , java.lang.String VAR_2 , java.lang.String VAR_3 , TYPE_3 VAR_4 , java.lang.Integer VAR_5 ) ;
+Sample BLEU Score: 76.04----------------------------------------
+--- Sample 28 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String VAR_1 , java.lang.String pattern ) { if ( VAR_1 == null ) { return ; } this . VAR_1 = TYPE_1 . METHOD_2 ( pattern ) . METHOD_3 ( VAR_2 ) . METHOD_4 ( VAR_1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.String VAR_1 , java.lang.String pattern ) { this . VAR_1 = TYPE_1 . METHOD_2 ( pattern ) . METHOD_3 ( VAR_2 ) . METHOD_4 ( ) ; }
+Sample BLEU Score: 70.88----------------------------------------
+--- Sample 29 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String data , int VAR_1 ) { data = data . trim ( ) . replaceAll ( STRING_1 , STRING_2 ) ; if ( data . equals ( STRING_2 ) ) return ; TYPE_1 . METHOD_1 ( data , VAR_1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.String data , int VAR_1 ) { data = data . trim ( ) . replaceAll ( STRING_1 , STRING_2 ) ; METHOD_1 ( data , VAR_1 ) ; } }
+Sample BLEU Score: 69.32----------------------------------------
+--- Sample 30 ---TARGET (Expected output):
+private TYPE_1 METHOD_1 ( TYPE_2 p ) { if ( p == null ) { return null ; } return TYPE_1 . METHOD_2 ( p . METHOD_3 ( ) , p . METHOD_4 ( ) ) ; }
+PREDICTION (Model output):
+public TYPE_1 METHOD_1 ( TYPE_2 p ) { return TYPE_1 . METHOD_2 ( p . METHOD_3 ( ) , p . METHOD_4 ( ) , true ) ; }
+Sample BLEU Score: 68.46----------------------------------------
+--- Sample 31 ---TARGET (Expected output):
+public TYPE_1 METHOD_1 ( TYPE_1 VAR_1 ) throws TYPE_2 { return null ; }
+PREDICTION (Model output):
+public TYPE_1 METHOD_1 ( TYPE_1 VAR_1 ) throws TYPE_2 { return TYPE_3 . METHOD_2 ( VAR_1 . METHOD_3 ( ) , VAR_2 ) ; } }
+Sample BLEU Score: 45.32----------------------------------------
+--- Sample 32 ---TARGET (Expected output):
+public static TYPE_1 METHOD_1 ( java.lang.String id , java.lang.String VAR_1 , java.util.Properties VAR_2 ) throws TYPE_2 { return TYPE_3 . METHOD_1 ( id , VAR_1 , VAR_2 , null ) ; }
+PREDICTION (Model output):
+public static TYPE_1 METHOD_1 ( java.lang.String id , java.lang.String VAR_1 , java.util.Properties VAR_2 ) throws TYPE_2 { return TYPE_3 . METHOD_1 ( id , VAR_1 , VAR_2 ) ; } }
+Sample BLEU Score: 94.18----------------------------------------
+--- Sample 33 ---TARGET (Expected output):
+void METHOD_1 ( TYPE_1 VAR_1 ) ;
+PREDICTION (Model output):
+void METHOD_1 ( TYPE_2 state ) { return ; }
+Sample BLEU Score: 46.05----------------------------------------
+--- Sample 34 ---TARGET (Expected output):
+public float METHOD_1 ( ) { return ( ( VAR_1 ) + ( TYPE_1 . METHOD_2 ( ) ) ) / ( VAR_2 ) ; }
+PREDICTION (Model output):
+public float METHOD_1 ( ) { return VAR_1 ; }
+Sample BLEU Score: 15.47----------------------------------------
+--- Sample 35 ---TARGET (Expected output):
+public java.lang.String METHOD_1 ( ) { return VAR_3 ; }
+PREDICTION (Model output):
+public java.lang.String METHOD_1 ( ) { return VAR_3 ; }
+Sample BLEU Score: 100.00----------------------------------------
+--- Sample 36 ---TARGET (Expected output):
+public java.util.Collection < TYPE_1 > getView ( ) { return view . values ( ) ; }
+PREDICTION (Model output):
+public java.util.Collection < TYPE_1 > getView ( ) { return view . values ( ) ; }
+Sample BLEU Score: 100.00----------------------------------------
+--- Sample 37 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_2 ) { if ( VAR_3 ) { if ( VAR_4 ) { METHOD_2 ( VAR_2 ) ; } METHOD_3 ( VAR_2 ) ; } }
+PREDICTION (Model output):
+public void METHOD_1 ( java.util.ArrayList < TYPE_1 > VAR_1 ) { for ( TYPE_1 VAR_2 : VAR_1 ) { if ( VAR_3 ) { if ( VAR_4 ) { METHOD_2 ( VAR_2 ) ; } METHOD_3 ( VAR_2 ) ; } } }
+Sample BLEU Score: 64.97----------------------------------------
+--- Sample 38 ---TARGET (Expected output):
+public static boolean METHOD_1 ( int VAR_1 ) { return ( VAR_2 ) == VAR_1 ? true : false ; }
+PREDICTION (Model output):
+public static boolean METHOD_1 ( int VAR_1 ) { return ( VAR_2 ) != VAR_1 ; }
+Sample BLEU Score: 71.92----------------------------------------
+--- Sample 39 ---TARGET (Expected output):
+public void show ( ) { VAR_1 . show ( ) ; VAR_1 . METHOD_1 ( ) ; }
+PREDICTION (Model output):
+public void show ( ) { VAR_1 . show ( ) ; }
+Sample BLEU Score: 51.34----------------------------------------
+--- Sample 40 ---TARGET (Expected output):
+public int METHOD_1 ( java.lang.String VAR_1 ) { if ( ( VAR_1 . length ( ) ) == 0 ) { return 0 ; } return node . METHOD_1 ( VAR_1 , 0 ) ; }
+PREDICTION (Model output):
+public int METHOD_1 ( java.lang.String VAR_1 ) { return node . METHOD_1 ( VAR_1 , 1 ) ; } }
+Sample BLEU Score: 47.45----------------------------------------
+--- Sample 41 ---TARGET (Expected output):
+public void METHOD_1 ( ) { ( ( TYPE_2 ) ( getActivity ( ) ) ) . METHOD_3 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { ( ( TYPE_2 ) ( getActivity ( ) ) ) . METHOD_3 ( ) ; } }
+Sample BLEU Score: 96.36----------------------------------------
+--- Sample 42 ---TARGET (Expected output):
+public void METHOD_1 ( ) { VAR_1 = true ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { VAR_1 = true ; }
+Sample BLEU Score: 100.00----------------------------------------
+--- Sample 43 ---TARGET (Expected output):
+public void METHOD_1 ( ) { if ( ( ( VAR_1 ) != null ) && ( VAR_1 . METHOD_3 ( ) ) ) { VAR_1 . METHOD_4 ( ) ; } METHOD_2 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { if ( ( ( VAR_1 ) != null ) && ( VAR_1 . METHOD_3 ( ) ) ) { VAR_1 . METHOD_4 ( ) ; }
+Sample BLEU Score: 85.88----------------------------------------
+--- Sample 44 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_2 VAR_1 ) { this . VAR_2 . add ( VAR_1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 < TYPE_2 , java.util.ArrayList < java.lang.String > > VAR_1 ) { this . VAR_2 . add ( VAR_1 ) ; }
+Sample BLEU Score: 55.32----------------------------------------
+--- Sample 45 ---TARGET (Expected output):
+public < TYPE_1 extends java.util.List < TYPE_2 > & TYPE_3 > boolean METHOD_1 ( TYPE_1 VAR_1 , int VAR_2 ) { return true ; }
+PREDICTION (Model output):
+public < TYPE_1 extends java.util.List < TYPE_2 > & TYPE_3 > boolean METHOD_1 ( TYPE_1 VAR_1 , int VAR_2 ) { return ! ( TYPE_4 . equals ( VAR_1 . get ( VAR_2 ) . METHOD_2 ( ) ) ) ; }
+Sample BLEU Score: 58.96----------------------------------------
+--- Sample 46 ---TARGET (Expected output):
+private boolean METHOD_1 ( java.lang.Integer [ ] [ ] array ) { return ( METHOD_2 ( array ) ) == 1 ; }
+PREDICTION (Model output):
+private boolean METHOD_1 ( int [ ] [ ] array ) { return ( METHOD_2 ( array , 0 ) ) == 1 ; }
+Sample BLEU Score: 73.08----------------------------------------
+--- Sample 47 ---TARGET (Expected output):
+public boolean update ( TYPE_1 VAR_1 ) { return false ; }
+PREDICTION (Model output):
+public TYPE_1 update ( TYPE_1 VAR_1 ) { return null ; }
+Sample BLEU Score: 62.33----------------------------------------
+--- Sample 48 ---TARGET (Expected output):
+private TYPE_1 METHOD_1 ( java.lang.String id ) { for ( TYPE_1 VAR_1 : VAR_2 . METHOD_2 ( ) ) { return VAR_1 ; } return new TYPE_1 ( ) ; }
+PREDICTION (Model output):
+private TYPE_1 METHOD_1 ( java.lang.String id ) { java.lang.System.out.println ( ( ( STRING_1 + STRING_2 ) + id ) ) ; for ( TYPE_1 VAR_1 : VAR_2 . METHOD_2 ( ) ) { return VAR_1 ; } return new TYPE_1 ( ) ;
+Sample BLEU Score: 63.88----------------------------------------
+--- Sample 49 ---TARGET (Expected output):
+protected void METHOD_1 ( TYPE_1 VAR_1 ) { super . METHOD_1 ( VAR_1 ) ; METHOD_2 ( VAR_2 ) ; }
+PREDICTION (Model output):
+protected void METHOD_1 ( TYPE_1 VAR_1 ) { super . METHOD_1 ( VAR_1 ) ; METHOD_2 ( VAR_2 ) ; TYPE_2 < java.util.Map < java.lang.String , java.lang.Object > > VAR_3 = new TYPE_3 ( STRING_1 ) ; METHOD_3 ( VAR_3 ) ; }
+Sample BLEU Score: 41.79----------------------------------------
+--- Sample 50 ---TARGET (Expected output):
+private static byte METHOD_1 ( byte b , int VAR_1 ) { b |= ( ( byte ) ( 1 < < VAR_1 ) ) ; return b ; }
+PREDICTION (Model output):
+public static byte METHOD_1 ( byte b , int VAR_1 ) { b |= ( ( byte ) ( 1 < < VAR_1 ) ) ; return b ; }
+Sample BLEU Score: 97.18----------------------------------------
+--- Sample 51 ---TARGET (Expected output):
+public int METHOD_1 ( java.lang.Object VAR_1 ) { int index = VAR_2 . METHOD_2 ( VAR_1 ) ; return index ; }
+PREDICTION (Model output):
+public int METHOD_1 ( java.lang.Object VAR_1 ) { return VAR_2 . METHOD_1 ( VAR_1 ) ; } }
+Sample BLEU Score: 69.19----------------------------------------
+--- Sample 52 ---TARGET (Expected output):
+public void METHOD_1 ( final boolean VAR_1 ) { synchronized ( buffer ) { if ( VAR_1 ) { METHOD_1 ( ) ; } else { VAR_2 = null ; VAR_3 = null ; VAR_4 = null ; } } }
+PREDICTION (Model output):
+public synchronized void METHOD_1 ( final boolean VAR_1 ) { if ( VAR_1 ) { METHOD_1 ( ) ; } else { VAR_2 = null ; VAR_3 = null ; VAR_4 = null ; } }  ) ;
+Sample BLEU Score: 87.75----------------------------------------
+--- Sample 53 ---TARGET (Expected output):
+public static void main ( java.lang.String [ ] args ) throws java.lang.Exception { TYPE_1 . METHOD_1 ( TYPE_2 , STRING_1 , INT_1 , INT_2 ) ; }
+PREDICTION (Model output):
+public static void main ( java.lang.String [ ] args ) throws java.lang.Exception
+Sample BLEU Score: 25.92----------------------------------------
+--- Sample 54 ---TARGET (Expected output):
+public synchronized void METHOD_1 ( int VAR_1 ) { if ( ( this . VAR_1 ) <= VAR_1 ) { this . VAR_1 = VAR_1 ; } else { return ; } }
+PREDICTION (Model output):
+public synchronized void METHOD_1 ( int VAR_1 ) { assert ( this . VAR_1 ) >= VAR_1 ; this . VAR_1 = VAR_1 ; return ; }
+Sample BLEU Score: 64.77----------------------------------------
+--- Sample 55 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 node ) { }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 node ) { return ; }
+Sample BLEU Score: 79.17----------------------------------------
+--- Sample 56 ---TARGET (Expected output):
+private void METHOD_1 ( TYPE_1 VAR_1 ) { int count = VAR_2 . METHOD_2 ( ) . size ( ) ; if ( ( VAR_3 ) < ( count - INT_1 ) ) { ( VAR_3 ) ++ ; METHOD_3 ( ) ; } }
+PREDICTION (Model output):
+private void METHOD_1 ( TYPE_1 VAR_1 ) { int count = VAR_2 . METHOD_2 ( ) . size ( ) ; if ( ( ( VAR_3 ) + 1 ) < ( count - INT_1 ) ) { ( VAR_3 ) ++ ; METHOD_3 ( ) ; } } }
+Sample BLEU Score: 91.06----------------------------------------
+--- Sample 57 ---TARGET (Expected output):
+public boolean METHOD_1 ( android.view.View VAR_1 , TYPE_1 event ) { VAR_1 . METHOD_2 ( ) . METHOD_2 ( ) . METHOD_3 ( true ) ; return false ; }
+PREDICTION (Model output):
+public boolean METHOD_1 ( android.view.View VAR_1 , TYPE_1 event ) { VAR_1 . METHOD_2 ( ) . METHOD_2 ( ) . METHOD_3 ( true ) ; return VAR_1 ; }
+Sample BLEU Score: 91.18----------------------------------------
+--- Sample 58 ---TARGET (Expected output):
+public void METHOD_1 ( java.net.URL url , TYPE_1 VAR_1 ) { VAR_2 . METHOD_2 ( ) . add ( new TYPE_2 ( STRING_1 , STRING_2 , STRING_3 ) ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.net.URL url ) { }
+Sample BLEU Score: 6.66----------------------------------------
+--- Sample 59 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String message ) { VAR_1 . METHOD_2 ( ) . METHOD_1 ( message ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.String msg ) { }
+Sample BLEU Score: 24.56----------------------------------------
+--- Sample 60 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 , java.lang.String VAR_2 , int num ) { TYPE_2 VAR_3 = new TYPE_2 ( ) ; VAR_3 . METHOD_2 ( VAR_2 , num , VAR_1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 , java.lang.String VAR_2 , int num ) { TYPE_2 VAR_3 = new TYPE_2 ( ) ; VAR_3 . METHOD_2 ( VAR_2 , num , VAR_1 , false , true ) ; }
+Sample BLEU Score: 91.14----------------------------------------
+--- Sample 61 ---TARGET (Expected output):
+private void METHOD_1 ( java.lang.String VAR_1 ) { }
+PREDICTION (Model output):
+private void METHOD_1 ( java.lang.String VAR_1 ) { }
+Sample BLEU Score: 100.00----------------------------------------
+--- Sample 62 ---TARGET (Expected output):
+public void METHOD_1 ( ) { VAR_1 = TYPE_1 . METHOD_2 ( STRING_1 , STRING_2 , VAR_2 , new TYPE_2 ( ) , new java.util.Date ( ) ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { }
+Sample BLEU Score: 0.93----------------------------------------
+--- Sample 63 ---TARGET (Expected output):
+public void METHOD_1 ( ) { super . METHOD_1 ( ) ; TYPE_1 . i ( VAR_1 , STRING_1 ) ; TYPE_1 . i ( VAR_1 , STRING_2 ) ; VAR_2 . METHOD_2 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { super . METHOD_1 ( ) ; }
+Sample BLEU Score: 9.51----------------------------------------
+--- Sample 64 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 , int VAR_2 ) { }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 , int VAR_2 ) { return ; }
+Sample BLEU Score: 86.42----------------------------------------
+--- Sample 65 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 item ) { }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 item ) { return ; }
+Sample BLEU Score: 79.17----------------------------------------
+--- Sample 66 ---TARGET (Expected output):
+public static void main ( java.lang.String [ ] args ) throws java.io.IOException { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . METHOD_2 ( ) ; }
+PREDICTION (Model output):
+public static void main ( java.lang.String [ ] args ) throws java.io.IOException { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . METHOD_1 ( ) ; return ; }
+Sample BLEU Score: 89.08----------------------------------------
+--- Sample 67 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 , TYPE_2 response ) { TYPE_3 VAR_2 = new TYPE_3 ( STRING_1 , response . METHOD_2 ( ) , response ) ; METHOD_1 ( VAR_1 , response , VAR_2 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 , TYPE_2 response ) { TYPE_3 VAR_2 = new TYPE_3 ( STRING_1 , response . METHOD_2 ( ) , response ) ; TYPE_4 VAR_3 = new TYPE_4 ( VAR_2 ) ; METHOD_1 ( VAR_1 , response ) ; } }
+Sample BLEU Score: 77.09----------------------------------------
+--- Sample 68 ---TARGET (Expected output):
+public void METHOD_1 ( ) throws TYPE_1 { VAR_2 . METHOD_2 ( new TYPE_3 ( STRING_1 ) , null ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) throws TYPE_1 { return ; }
+Sample BLEU Score: 23.22----------------------------------------
+--- Sample 69 ---TARGET (Expected output):
+public TYPE_1 METHOD_1 ( java.lang.Long VAR_1 , java.lang.Long VAR_2 ) { TYPE_1 VAR_3 = METHOD_2 ( VAR_1 , VAR_2 ) ; if ( VAR_3 != null ) { VAR_3 = delete ( VAR_3 . getId ( ) ) ; } return VAR_3 ; }
+PREDICTION (Model output):
+public TYPE_1 METHOD_1 ( java.lang.Long VAR_1 , java.lang.Long VAR_2 ) { TYPE_1 VAR_3 = METHOD_2 ( VAR_1 , VAR_2 ) ; if ( VAR_3 != null ) { VAR_3 . delete ( VAR_2 ) ; } return null ; }
+Sample BLEU Score: 83.90----------------------------------------
+--- Sample 70 ---TARGET (Expected output):
+public void METHOD_1 ( ) { TYPE_1 . METHOD_2 ( ) . METHOD_3 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { TYPE_1 . METHOD_2 ( ) . METHOD_3 ( ) ; TYPE_2 . METHOD_4 ( STRING_1 , VAR_1 . METHOD_5 ( ) ) ; METHOD_6 ( ) ; }
+Sample BLEU Score: 44.72----------------------------------------
+--- Sample 71 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 , int id ) { new TYPE_2 ( ) . execute ( ) ; METHOD_2 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 , int id ) { TYPE_2 VAR_2 = new TYPE_2 ( ) ; VAR_2 . execute ( ) ; }
+Sample BLEU Score: 67.36----------------------------------------
+--- Sample 72 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String title , TYPE_1 status ) throws java.lang.Throwable { TYPE_2 VAR_1 = VAR_2 . METHOD_2 ( title ) . get ( 0 ) ; assertThat ( VAR_1 . METHOD_3 ( ) , TYPE_4 . METHOD_4 ( status ) ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.String title , TYPE_1 status ) throws java.lang.Throwable { TYPE_2 VAR_1 = VAR_2 . METHOD_2 ( title ) . get ( 1 ) ; TYPE_3 . assertThat ( VAR_1 . METHOD_3 ( ) , TYPE_4 . METHOD_4 ( status ) ) ; }
+Sample BLEU Score: 89.66----------------------------------------
+--- Sample 73 ---TARGET (Expected output):
+public java.util.List METHOD_1 ( ) { return java.util.Arrays.asList ( STRING_2 , STRING_3 , STRING_4 ) ; }
+PREDICTION (Model output):
+public java.util.List METHOD_1 ( ) { return java.util.Arrays.asList ( STRING_1 , STRING_2 , STRING_4 ) ; }
+Sample BLEU Score: 91.51----------------------------------------
+--- Sample 74 ---TARGET (Expected output):
+public void METHOD_1 ( ) { if ( ! ( VAR_1 ) ) { METHOD_2 ( ) ; VAR_1 = true ; } else { VAR_1 = false ; METHOD_3 ( ) ; } }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { if ( ! ( VAR_1 ) ) { VAR_1 = true ; METHOD_2 ( ) ; } else { VAR_1 = false ; METHOD_3 ( ) ; } return ; }
+Sample BLEU Score: 85.82----------------------------------------
+--- Sample 75 ---TARGET (Expected output):
+private void METHOD_1 ( TYPE_1 VAR_1 , TYPE_2 VAR_2 , TYPE_3 VAR_3 ) { VAR_1 . METHOD_2 ( VAR_2 , this , false ) ; VAR_1 . METHOD_2 ( VAR_2 . offset ( VAR_3 . METHOD_3 ( ) ) , this , false ) ; }
+PREDICTION (Model output):
+private void METHOD_1 ( TYPE_1 VAR_1 , TYPE_2 VAR_2 , TYPE_3 VAR_3 ) { VAR_1 . METHOD_2 ( VAR_2 , this ) ; VAR_1 . METHOD_2 ( VAR_2 . offset ( VAR_3 . METHOD_3 ( ) ) , this ) ; }
+Sample BLEU Score: 90.47----------------------------------------
+--- Sample 76 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String VAR_1 ) { this . VAR_1 = VAR_1 ; VAR_2 . METHOD_2 ( VAR_3 , VAR_4 , VAR_1 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.String VAR_1 ) { this . VAR_1 = VAR_1 ; VAR_2 = null ; }
+Sample BLEU Score: 56.83----------------------------------------
+--- Sample 77 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String id ) { android.content.Intent i = new android.content.Intent ( ) ; i . METHOD_2 ( getActivity ( ) , VAR_1 class ) ; i . METHOD_3 ( "id" , id ) ; METHOD_4 ( i ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( int id ) { android.content.Intent i = new android.content.Intent ( ) ; i . METHOD_2 ( getActivity ( ) , VAR_1 class ) ; i . METHOD_3 ( "id" , getId ( ) ) ; METHOD_4 ( i ) ; }
+Sample BLEU Score: 86.14----------------------------------------
+--- Sample 78 ---TARGET (Expected output):
+public TYPE_1 METHOD_1 ( TYPE_2 context ) { int offset = context . METHOD_2 ( ) ; return context . METHOD_3 ( ) . METHOD_4 ( offset ) . METHOD_5 ( ) . METHOD_5 ( ) ; }
+PREDICTION (Model output):
+public TYPE_1 METHOD_1 ( TYPE_2 context ) { int offset = context . METHOD_2 ( ) ; TYPE_1 VAR_1 = context . METHOD_3 ( ) . METHOD_4 ( offset ) . METHOD_5 ( ) . METHOD_5 ( ) ; return METHOD_1 ( ) ; }
+Sample BLEU Score: 77.80----------------------------------------
+--- Sample 79 ---TARGET (Expected output):
+public TYPE_1 build ( ) { return new TYPE_1 ( this . VAR_1 . METHOD_1 ( STRING_2 , TYPE_2 . METHOD_2 ( query , VAR_3 ) ) ) ; }
+PREDICTION (Model output):
+public TYPE_1 build ( ) { return new TYPE_1 ( this . VAR_1 . METHOD_1 ( STRING_1 , VAR_2 ) . METHOD_1 ( STRING_2 , TYPE_2 . METHOD_2 ( query , VAR_3 ) ) ) ; }
+Sample BLEU Score: 77.38----------------------------------------
+--- Sample 80 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 ) { VAR_4 . METHOD_4 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 ) { }
+Sample BLEU Score: 48.34----------------------------------------
+--- Sample 81 ---TARGET (Expected output):
+public static void METHOD_1 ( boolean VAR_1 ) { if ( VAR_1 ) TYPE_1 . METHOD_2 ( STRING_1 , true ) ; else TYPE_1 . METHOD_2 ( STRING_2 , true ) ; }
+PREDICTION (Model output):
+public static void METHOD_1 ( boolean VAR_1 ) { if ( VAR_1 ) TYPE_1 . METHOD_2 ( STRING_1 ) ; }
+Sample BLEU Score: 55.08----------------------------------------
+--- Sample 82 ---TARGET (Expected output):
+private void METHOD_1 ( ) { int VAR_1 = VAR_2 . x ; int VAR_3 = VAR_2 . y ; if ( ! ( METHOD_2 ( VAR_1 , VAR_3 , VAR_4 ) ) ) { VAR_3 ++ ; } METHOD_3 ( VAR_1 , VAR_3 , VAR_4 ) ; }
+PREDICTION (Model output):
+private void METHOD_1 ( ) { int VAR_1 = VAR_2 . x ; int VAR_3 = VAR_2 . y ; if ( ! ( METHOD_2 ( VAR_1 , VAR_3 , VAR_4 ) ) ) { VAR_3 ++ ; } METHOD_3 ( VAR_1 , VAR_3 , VAR_4 ) ; } }
+Sample BLEU Score: 98.71----------------------------------------
+--- Sample 83 ---TARGET (Expected output):
+public void METHOD_1 ( ) { boolean result = VAR_1 . METHOD_2 ( STRING_1 , STRING_1 ) ; METHOD_3 ( false ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { boolean result = VAR_1 . METHOD_2 ( STRING_1 , STRING_1 ) ; TYPE_1 . METHOD_3 ( ) ; }
+Sample BLEU Score: 80.87----------------------------------------
+--- Sample 84 ---TARGET (Expected output):
+public void METHOD_1 ( int i ) { METHOD_2 ( VAR_1 [ i ] ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( int i ) { METHOD_2 ( VAR_1 [ i ] ) ; } }
+Sample BLEU Score: 95.54----------------------------------------
+--- Sample 85 ---TARGET (Expected output):
+public void METHOD_1 ( ) { VAR_1 . METHOD_2 ( VAR_2 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { }
+Sample BLEU Score: 20.97----------------------------------------
+--- Sample 86 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 context ) { for ( TYPE_2 VAR_1 : VAR_2 ) { if ( VAR_1 instanceof TYPE_3 ) { ( ( TYPE_3 ) ( VAR_1 ) ) . METHOD_1 ( context ) ; } } }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 context ) { super . METHOD_1 ( context ) ; for ( TYPE_2 VAR_1 : VAR_2 ) { if ( VAR_1 instanceof TYPE_3 ) { ( ( TYPE_3 ) ( VAR_1 ) ) . METHOD_1 ( context ) ; } }
+Sample BLEU Score: 84.16----------------------------------------
+--- Sample 87 ---TARGET (Expected output):
+public void METHOD_1 ( final TYPE_1 VAR_1 ) { java.lang.String VAR_2 = null ; if ( VAR_1 != null ) { VAR_2 = VAR_1 . METHOD_2 ( ) ; } VAR_3 . METHOD_3 ( VAR_2 ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( final TYPE_1 VAR_1 ) ;
+Sample BLEU Score: 3.42----------------------------------------
+--- Sample 88 ---TARGET (Expected output):
+public void METHOD_1 ( ) { VAR_1 = new TYPE_2 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) { METHOD_1 ( ) ; }
+Sample BLEU Score: 49.38----------------------------------------
+--- Sample 89 ---TARGET (Expected output):
+java.util.Set < java.lang.String > METHOD_1 ( java.lang.String pattern ) ;
+PREDICTION (Model output):
+java.util.Set < java.lang.String > METHOD_1 ( )
+Sample BLEU Score: 62.90----------------------------------------
+--- Sample 90 ---TARGET (Expected output):
+public void METHOD_1 ( ) throws java.lang.Exception { VAR_1 . METHOD_2 ( TYPE_1 . get ( STRING_1 ) ) . METHOD_5 ( TYPE_3 . status ( ) . METHOD_6 ( ) ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( ) throws java.lang.Exception { }
+Sample BLEU Score: 6.99----------------------------------------
+--- Sample 91 ---TARGET (Expected output):
+public byte METHOD_1 ( int x ) { return VAR_1 [ index [ VAR_3 ] ] . METHOD_1 ( x ) ; }
+PREDICTION (Model output):
+public byte METHOD_1 ( int x ) { return VAR_1 [ ( VAR_2 [ VAR_3 ] ) ] . METHOD_1 ( x ) ; } }
+Sample BLEU Score: 73.31----------------------------------------
+--- Sample 92 ---TARGET (Expected output):
+public static TYPE_1 METHOD_1 ( TYPE_2 VAR_1 , int i ) { if ( VAR_2 ) { VAR_2 = ! ( VAR_2 ) ; } return new TYPE_3 ( VAR_1 ) ; }
+PREDICTION (Model output):
+public static TYPE_1 METHOD_1 ( TYPE_2 VAR_1 , int i ) { if ( VAR_2 ) { VAR_3 . add ( new TYPE_3 ( VAR_1 ) ) ; VAR_2 = ! ( VAR_2 ) ; } return VAR_3 . get ( i ) ; }
+Sample BLEU Score: 71.58----------------------------------------
+--- Sample 93 ---TARGET (Expected output):
+public TYPE_1 METHOD_1 ( float VAR_1 , int VAR_2 , int VAR_3 , float [ ] VAR_4 ) { TYPE_1 VAR_5 = new TYPE_2 ( new TYPE_3 ( VAR_1 , VAR_2 , VAR_3 ) , VAR_8 ) ; return VAR_5 ; }
+PREDICTION (Model output):
+public TYPE_1 METHOD_1 ( float VAR_1 , int VAR_2 , int VAR_3 , float [ ] VAR_4 ) { TYPE_1 VAR_5 = new TYPE_2 ( new TYPE_3 ( VAR_1 , VAR_6 , VAR_7 , false ) , VAR_8 ) ; return VAR_5 ; }
+Sample BLEU Score: 90.24----------------------------------------
+--- Sample 94 ---TARGET (Expected output):
+public void METHOD_1 ( TYPE_1 VAR_1 ) { VAR_2 . METHOD_4 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( TYPE_1 VAR_1 ) { setText ( STRING_1 ) ; METHOD_2 ( ) ; METHOD_3 ( ) ; METHOD_4 ( ) ; }
+Sample BLEU Score: 48.09----------------------------------------
+--- Sample 95 ---TARGET (Expected output):
+public java.lang.String METHOD_1 ( ) { java.lang.System.out.println ( STRING_1 ) ; return STRING_4 ; }
+PREDICTION (Model output):
+public java.lang.String METHOD_1 ( ) { TYPE_1 VAR_1 = new TYPE_1 ( ) ; VAR_1 . add ( STRING_2 , STRING_3 ) ; return STRING_4 ; }
+Sample BLEU Score: 41.33----------------------------------------
+--- Sample 96 ---TARGET (Expected output):
+public void delete ( java.lang.Long id ) { TYPE_1 VAR_1 = VAR_2 . METHOD_1 ( VAR_3 class , id ) ; VAR_2 . remove ( VAR_1 ) ; }
+PREDICTION (Model output):
+public void update ( java.lang.Long id ) { return ; }
+Sample BLEU Score: 7.57----------------------------------------
+--- Sample 97 ---TARGET (Expected output):
+private void METHOD_1 ( ) { TYPE_1 = new TYPE_2 ( this . VAR_1 ) ; TYPE_1 . start ( ) ; }
+PREDICTION (Model output):
+private void METHOD_1 ( ) { TYPE_1 = new TYPE_2 ( this . VAR_1 ) ; VAR_2 = new TYPE_3 < java.lang.Void > ( TYPE_1 , null ) ; init ( ) ; }
+Sample BLEU Score: 52.48----------------------------------------
+--- Sample 98 ---TARGET (Expected output):
+private int METHOD_1 ( java.lang.String key ) { return ( ( key . METHOD_2 ( ) ) > > > 1 ) % ( VAR_1 . length ) ; }
+PREDICTION (Model output):
+public int METHOD_1 ( java.lang.String key ) { return ( key . METHOD_2 ( ) ) % ( VAR_1 . length ) ; }
+Sample BLEU Score: 77.09----------------------------------------
+--- Sample 99 ---TARGET (Expected output):
+public void METHOD_1 ( java.lang.String result ) { METHOD_2 ( result ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( java.lang.String result ) { VAR_1 . METHOD_3 ( ) ; return ; } }
+Sample BLEU Score: 54.15----------------------------------------
+--- Sample 100 ---TARGET (Expected output):
+public void METHOD_1 ( android.view.View VAR_1 ) { this . METHOD_3 ( ) ; }
+PREDICTION (Model output):
+public void METHOD_1 ( android.view.View VAR_1 ) { }
+Sample BLEU Score: 59.30----------------------------------------
+Total samples evaluated: 5835================================================================================
