@@ -8,7 +8,7 @@ from evaluate import load
 import torch
 
 # 1. Load dataset
-train = load_dataset("code_x_glue_cc_code_refinement", "small", split="train[:10%]")
+train = load_dataset("code_x_glue_cc_code_refinement", "small", split="train[:10%s]")
 val = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[:10%]")
 # 2. Load tokenizer and model
 model_name = "microsoft/CodeGPT-small-java"
@@ -27,23 +27,49 @@ class CodeGPTWithDropout(GPT2LMHeadModel):
         # Modify existing layers to ensure dropout is applied
         for layer in self.transformer.h:
             # Add dropout to attention output
-            if not hasattr(layer.attn, 'dropout'):
-                layer.attn.dropout = nn.Dropout(config.attn_pdrop)
+            if not hasattr(layer.attn, 'attn_dropout'):
+                layer.attn.attn_dropout = nn.Dropout(config.attn_pdrop)
             
-            # Add dropout to MLP output
+            # Add dropout to MLP output  
             if not hasattr(layer.mlp, 'dropout'):
                 layer.mlp.dropout = nn.Dropout(config.resid_pdrop)
     
-    def forward(self, input_ids=None, **kwargs):
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        labels=None,
+        use_cache=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+        **kwargs
+    ):
         # Apply input dropout to embeddings
-        if input_ids is not None:
+        if input_ids is not None and inputs_embeds is None:
             inputs_embeds = self.transformer.wte(input_ids)
             inputs_embeds = self.input_dropout(inputs_embeds)
-            kwargs['inputs_embeds'] = inputs_embeds
-            kwargs.pop('input_ids', None)
+            input_ids = None  # Set to None since we're using inputs_embeds
         
-        # Standard forward pass
-        outputs = super().forward(**kwargs)
+        # Call the parent forward method with all arguments
+        outputs = super().forward(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            labels=labels,  # Important: pass labels for loss calculation
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+            **kwargs
+        )
         
         # Apply output dropout to logits
         if hasattr(outputs, 'logits'):
@@ -52,6 +78,7 @@ class CodeGPTWithDropout(GPT2LMHeadModel):
         return outputs
 
 # Usage
+model_name = "gpt2"  # or your specific model
 config = GPT2Config.from_pretrained(model_name)
 config.dropout_rate = 0.1
 config.attn_pdrop = 0.1
@@ -59,6 +86,7 @@ config.resid_pdrop = 0.1
 config.embd_pdrop = 0.1
 
 model = CodeGPTWithDropout(config)
+
 
 
 # Add special tokens for better task understanding
