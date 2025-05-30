@@ -8,8 +8,8 @@ from evaluate import load
 import torch
 
 # 1. Load dataset
-train = load_dataset("code_x_glue_cc_code_refinement", "small", split="train")
-val = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation")
+train = load_dataset("code_x_glue_cc_code_refinement", "small", split="train[:10%]")
+val = load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[:10%]")
 # 2. Load tokenizer and model
 model_name = "microsoft/CodeGPT-small-java"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -258,7 +258,7 @@ class GenerativeTrainer(Trainer):
         return (loss, padded_predictions, labels)
 
 bleumetric = load("bleu")
-
+print(len(eval_inputs))
 def compute_metrics(eval_preds):
     try:
         predictions, labels = eval_preds
@@ -286,7 +286,7 @@ def compute_metrics(eval_preds):
             file.write("EVALUATION SAMPLES:")
             file.write("="*80)
             
-            num_samples_to_print = min(10, len(decoded_preds))
+            num_samples_to_print = min(100, len(decoded_preds))
             for i in range(num_samples_to_print):
                 file.write(f"\n--- Sample {i+1} ---")
                 
@@ -342,10 +342,10 @@ trainingargs =  Seq2SeqTrainingArguments(
     output_dir="./codegpt-code-refinement-improved",
     learning_rate=2e-5,
     per_device_train_batch_size=16,
-    save_steps=10000,
+    save_steps=50000,
     per_device_eval_batch_size=16,
     gradient_accumulation_steps=2,
-    num_train_epochs=10,
+    num_train_epochs=40,
     warmup_steps=500,
     weight_decay=0.01,
     greater_is_better=True,
