@@ -9,7 +9,8 @@ from transformers import (
     EncoderDecoderConfig,
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
-    EarlyStoppingCallback
+    EarlyStoppingCallback,
+    GPT2LMHeadModel
 )
 from datasets import load_dataset
 import numpy as np
@@ -28,31 +29,47 @@ special_tokens = {
 }
 tokenizer.add_special_tokens(special_tokens)
 
+def create_test():
+    from transformers import EncoderDecoderModel, RobertaTokenizer
+
+    # This method properly initializes cross-attention layers
+    model = EncoderDecoderModel.from_encoder_decoder_pretrained(
+        "microsoft/unixcoder-base",
+        "gpt2"
+    )
+
+    tokenizer = RobertaTokenizer.from_pretrained("microsoft/unixcoder-base")
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    # Configure generation
+    model.config.decoder_start_token_id = tokenizer.bos_token_id
+    model.config.eos_token_id = tokenizer.eos_token_id
+    model.config.pad_token_id = tokenizer.pad_token_id
+    return model
+
 # Option 1: UniXCoder + GPT2 decoder
 def create_unixcoder_gpt2_model():
     # Load UniXCoder as encoder
     encoder = RobertaModel.from_pretrained("microsoft/unixcoder-base")
     encoder.resize_token_embeddings(len(tokenizer))
-    
-    # Create GPT2 decoder with matching hidden size
-    decoder_config = GPT2Config(
-        vocab_size=len(tokenizer),
-        n_embd=768,  # Match UniXCoder hidden size
-        n_layer=6,   # Smaller decoder
-        n_head=12,
-        pad_token_id=tokenizer.pad_token_id,
-        bos_token_id=tokenizer.cls_token_id,
-        eos_token_id=tokenizer.sep_token_id,
-    )
-    decoder = GPT2Model(decoder_config)
-    
+
+    # Configure GPT-2 decoder with cross-attention
+    decoder_config = GPT2Config.from_pretrained("gpt2")
+    decoder_config.add_cross_attention = True  # This is the key fix
+    decoder_config.is_decoder = True
+
+    # Load decoder with the modified config
+    decoder = GPT2LMHeadModel.from_pretrained("gpt2", config=decoder_config)
+
     # Create encoder-decoder model
     model = EncoderDecoderModel(encoder=encoder, decoder=decoder)
-    
-    # Set special tokens
-    model.config.decoder_start_token_id = tokenizer.cls_token_id
+
+    # Configure the model
+    model.config.decoder_start_token_id = tokenizer.bos_token_id
+    model.config.eos_token_id = tokenizer.eos_token_id
     model.config.pad_token_id = tokenizer.pad_token_id
-    model.config.eos_token_id = tokenizer.sep_token_id
+
     
     return model
 
@@ -71,21 +88,24 @@ def create_unixcoder_encoder_decoder():
     model.config.decoder_start_token_id = tokenizer.cls_token_id
     model.config.pad_token_id = tokenizer.pad_token_id
     model.config.eos_token_id = tokenizer.sep_token_id
-    model.config.max_length = 512
+    model.config.max_length = 128
     model.config.early_stopping = True
     model.config.no_repeat_ngram_size = 3
     model.config.length_penalty = 2.0
-    model.config.num_beams = 4
+    model.config.num_beams = 10
     
     return model
 
 # Choose model variant
 print("Creating model...")
-model = create_unixcoder_gpt2_model()  # or create_unixcoder_encoder_decoder()
+model = create_unixcoder_encoder_decoder()  # or create_unixcoder_encoder_decoder()
 
 # Load CodeXGLUE dataset (example: Java to Python translation)
 print("Loading dataset...")
-dataset = load_dataset("code_x_glue_cc_code_refinement", "small")
+dataset = {
+    "train": load_dataset("code_x_glue_cc_code_refinement", "small", split="train"),
+    "validation": load_dataset("code_x_glue_cc_code_refinement", "small", split="validation[:15%]"),
+}
 
 # Alternative: Load from local files if you have them
 # from datasets import Dataset
@@ -94,13 +114,13 @@ dataset = load_dataset("code_x_glue_cc_code_refinement", "small")
 # Preprocessing function
 def preprocessfunction(examples):
     # Add language tags
-    sources = [f"<buggy> {code}" for code in examples["buggy"]]
-    targets = [f"<fixed> {code}" for code in examples["fixed"]]
+    sources = examples["buggy"]
+    targets = examples["fixed"]
     
     # Tokenize inputs
     modelinputs = tokenizer(
         sources,
-        max_length=512,
+        max_length=128,
         padding="max_length",
         truncation=True,
         return_tensors="pt"
@@ -110,7 +130,7 @@ def preprocessfunction(examples):
     with tokenizer.as_target_tokenizer():
         labels = tokenizer(
             targets,
-            max_length=512,
+            max_length=128,
             padding="max_length",
             truncation=True,
             return_tensors="pt"
@@ -118,17 +138,14 @@ def preprocessfunction(examples):
     
     # Replace padding token id with -100
     labels["input_ids"] = [
-        [[(l if l != tokenizer.pad_token_id else -100) for l in labels]
-        for label in labels["input_ids"]]
+        [(token_id if token_id != tokenizer.pad_token_id else -100) for token_id in label_sequence]
+        for label_sequence in labels["input_ids"]
     ]
+
     
     modelinputs["labels"] = labels["input_ids"]
     
     # Debug first example
-    # if len(sources) > 0:
-    #     print(f"\nPreprocessing example:")
-    #     print(f"Source: {sources}...")
-    #     print(f"Target: {targets}...")
     
     return modelinputs
 
@@ -153,35 +170,6 @@ bleumetric = evaluate.load("bleu")
 
 # Global variable to store sample predictions
 evalsamples = []
-
-def create_unixcoder_gpt2_model():
-    from transformers import GPT2LMHeadModel  # Use LMHead version instead of base
-    
-    # Load UniXCoder as encoder
-    encoder = RobertaModel.from_pretrained("microsoft/unixcoder-base")
-    encoder.resize_token_embeddings(len(tokenizer))
-    
-    # Create GPT2 decoder with matching hidden size and LM head
-    decoder_config = GPT2Config(
-        vocab_size=len(tokenizer),
-        n_embd=768,  # Match UniXCoder hidden size
-        n_layer=6,   # Smaller decoder
-        n_head=12,
-        pad_token_id=tokenizer.pad_token_id,
-        bos_token_id=tokenizer.cls_token_id,
-        eos_token_id=tokenizer.sep_token_id,
-    )
-    decoder = GPT2LMHeadModel(decoder_config)  # Changed from GPT2Model
-    
-    # Create encoder-decoder model
-    model = EncoderDecoderModel(encoder=encoder, decoder=decoder)
-    
-    # Set special tokens
-    model.config.decoder_start_token_id = tokenizer.cls_token_id
-    model.config.pad_token_id = tokenizer.pad_token_id
-    model.config.eos_token_id = tokenizer.sep_token_id
-    
-    return model
 
 
 
@@ -214,7 +202,7 @@ def compute_metrics(eval_preds):
     print("="*80 + "\n")
     
     # Calculate BLEU
-    bleu_score = bleu_metric.compute(
+    bleu_score = bleumetric.compute(
         predictions=decoded_preds,
         references=[[label] for label in decoded_labels]
     )
@@ -225,17 +213,17 @@ def compute_metrics(eval_preds):
 training_args = Seq2SeqTrainingArguments(
     output_dir="./unixcoder-decoder-results",
     evaluation_strategy="steps",
-    eval_steps=500,
+    eval_steps=1000,
     save_strategy="steps",
-    save_steps=1000,
+    save_steps=50000,
     learning_rate=5e-5,
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
     weight_decay=0.01,
-    num_train_epochs=3,
+    num_train_epochs=2,
     predict_with_generate=True,
-    generation_max_length=512,
-    generation_num_beams=4,
+    generation_max_length=128,
+    generation_num_beams=10,
     fp16=True,
     logging_dir="./logs",
     logging_steps=50,
@@ -250,8 +238,8 @@ training_args = Seq2SeqTrainingArguments(
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=eval_dataset,
+    train_dataset=traindataset,
+    eval_dataset=evaldataset,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
